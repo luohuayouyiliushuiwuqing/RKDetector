@@ -29,3 +29,17 @@ install(PROGRAMS ${RGA_PATH}/${CMAKE_SYSTEM_NAME}/${TARGET_LIB_ARCH}/librga.so D
 # timer
 set(TIMER_PATH ${CMAKE_CURRENT_SOURCE_DIR}/timer)
 set(LIBTIMER_INCLUDES ${TIMER_PATH} PARENT_SCOPE)
+
+# opencv
+set(OPENCV_PATH ${CMAKE_CURRENT_SOURCE_DIR}/opencv2)
+set(OPENCV_LIB_DIR ${OPENCV_PATH}/libs/${TARGET_LIB_ARCH})
+set(LIBOPENCV
+    ${OPENCV_LIB_DIR}/libopencv_imgcodecs.so
+    ${OPENCV_LIB_DIR}/libopencv_imgproc.so
+    ${OPENCV_LIB_DIR}/libopencv_core.so
+    PARENT_SCOPE
+)
+set(LIBOPENCV_INCLUDES ${OPENCV_PATH}/include PARENT_SCOPE)
+# install all opencv shared libraries
+file(GLOB OPENCV_SHARED_LIBS "${OPENCV_LIB_DIR}/*.so*")
+install(PROGRAMS ${OPENCV_SHARED_LIBS} DESTINATION lib)

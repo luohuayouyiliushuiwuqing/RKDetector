@@ -9,13 +9,6 @@ target_include_directories(fileutils PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-add_library(imagedrawing STATIC
-    image_drawing.c
-)
-target_include_directories(imagedrawing PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
 if(DISABLE_RGA)
     add_definitions(-DDISABLE_RGA)
 endif ()
