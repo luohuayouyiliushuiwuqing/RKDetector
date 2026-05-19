@@ -16,14 +16,11 @@ target_include_directories(imagedrawing PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-if(DISABLE_RGA AND NOT (TARGET_SOC STREQUAL "rv1106" OR TARGET_SOC STREQUAL "rv1103" OR TARGET_SOC STREQUAL "rv1103b"))
+if(DISABLE_RGA)
     add_definitions(-DDISABLE_RGA)
 endif ()
 
-# only RGA on rv1106 and rk3588 support handle
-if (TARGET_SOC STREQUAL "rv1106" OR TARGET_SOC STREQUAL "rk3588")
-    add_definitions(-DLIBRGA_IM2D_HANDLE)
-endif()
+add_definitions(-DLIBRGA_IM2D_HANDLE)
 
 add_library(imageutils STATIC
     image_utils.c
@@ -49,16 +46,3 @@ else()
         ${LIBJPEG_INCLUDES}
     )
 endif()
-
-add_library(audioutils STATIC
-    audio_utils.c
-)
-
-target_link_libraries(audioutils
-    ${LIBSNDFILE}
-)
-
-target_include_directories(audioutils PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${LIBSNDFILE_INCLUDES}
-)
