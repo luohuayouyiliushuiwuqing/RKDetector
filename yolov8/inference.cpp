@@ -2,21 +2,21 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "yolov8.h"
+#include "inference.h"
 #include "common.h"
 #include "image_utils.h"
 
-int inference_yolov8_model(rknn_app_context_t*        app_ctx,
-                           image_buffer_t*            img,
-                           object_detect_result_list* od_results)
+int inference_model(rknn_app_context_t*        app_ctx,
+                    image_buffer_t*            img,
+                    object_detect_result_list* od_results)
 {
     int            ret;
     image_buffer_t dst_img;
     letterbox_t    letter_box;
     rknn_input     inputs[app_ctx->io_num.n_input];
     rknn_output    outputs[app_ctx->io_num.n_output];
-    const float    nms_threshold      = NMS_THRESH; // 默认的NMS阈值
-    const float    box_conf_threshold = BOX_THRESH; // 默认的置信度阈值
+    const float    nms_threshold      = NMS_THRESH;
+    const float    box_conf_threshold = BOX_THRESH;
     int            bg_color           = 114;
 
     if ((!app_ctx) || !(img) || (!od_results))
@@ -114,7 +114,6 @@ int inference_yolov8_model(rknn_app_context_t*        app_ctx,
                  nms_threshold,
                  od_results);
 
-    // Remeber to release rknn output
     rknn_outputs_release(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs);
 
     return 0;
