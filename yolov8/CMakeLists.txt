@@ -34,7 +34,6 @@ add_executable(rknn_yolov8_demo
 target_link_libraries(rknn_yolov8_demo
     imageutils
     fileutils
-    yoloutils
     ${LIBRKNNRT}
     ${LIBOPENCV}
     dl
@@ -55,7 +54,6 @@ add_executable(rknn_yolo26_demo
 target_link_libraries(rknn_yolo26_demo
     imageutils
     fileutils
-    yoloutils
     ${LIBRKNNRT}
     ${LIBOPENCV}
     dl

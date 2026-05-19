@@ -1,4 +1,4 @@
-#include "postprocess_26.h"
+#include "postprocess_common.h"
 
 #include <math.h>
 #include <stdlib.h>

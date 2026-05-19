@@ -1,6 +1,5 @@
-#include "postprocess_v8.h"
+#include "postprocess_common.h"
 
-#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 

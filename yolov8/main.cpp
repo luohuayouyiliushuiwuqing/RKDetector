@@ -1,5 +1,4 @@
 #include "inference.h"
-#include "yolo.h"
 
 #include <stdio.h>
 #include <string.h>
