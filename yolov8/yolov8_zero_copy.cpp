@@ -3,7 +3,7 @@
 #include <string.h>
 #include <math.h>
 
-#include "../yolov8.h"
+#include "yolov8.h"
 #include "common.h"
 #include "file_utils.h"
 #include "image_utils.h"

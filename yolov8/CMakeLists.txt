@@ -9,7 +9,7 @@ if (ENABLE_ASAN)
     set(CMAKE_LINKER_FLAGS_DEBUG "${CMAKE_LINKER_FLAGS_DEBUG} -fno-omit-frame-pointer -fsanitize=address")
 endif ()
 
-set(rknpu_yolov8_file rknpu2/yolov8.cc)
+set(rknpu_yolov8_file yolov8.cpp)
 
 add_subdirectory(../3rdparty 3rdparty.out)
 add_subdirectory(../utils utils.out)
@@ -19,8 +19,8 @@ set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 file(GLOB SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 
 add_executable(${PROJECT_NAME}
-        main.cc
-        postprocess.cc
+        main.cpp
+        postprocess.cpp
         ${rknpu_yolov8_file}
 )
 
@@ -44,9 +44,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # zero-copy variant
 add_executable(${PROJECT_NAME}_zero_copy
-        main.cc
-        postprocess.cc
-        rknpu2/yolov8_zero_copy.cc
+        main.cpp
+        postprocess.cpp
+        yolov8_zero_copy.cpp
 )
 
 target_compile_definitions(${PROJECT_NAME}_zero_copy PRIVATE ZERO_COPY)

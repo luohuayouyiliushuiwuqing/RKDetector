@@ -1,11 +1,8 @@
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "yolov8.h"
-#include "file_utils.h"
-#include "image_utils.h"
 
 #include <opencv2/opencv.hpp>
 

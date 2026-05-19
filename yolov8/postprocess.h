@@ -1,19 +1,13 @@
 #ifndef _RKNN_YOLOV8_DEMO_POSTPROCESS_H_
 #define _RKNN_YOLOV8_DEMO_POSTPROCESS_H_
 
-#include <stdint.h>
-#include <vector>
-#include "rknn_api.h"
 #include "common.h"
 #include "image_utils.h"
-#include "yolov8.h"
 
 #define OBJ_NAME_MAX_SIZE 64
 #define OBJ_NUMB_MAX_SIZE 128
 #define NMS_THRESH        0.45
 #define BOX_THRESH        0.25
-
-// class rknn_app_context_t;
 
 typedef struct
 {

@@ -40,9 +40,8 @@ if [ -z ${BUILD_DEMO_NAME} ]; then
   exit -1
 fi
 
-TARGET_SOC=rk3588
-TARGET_ARCH=aarch64
 GCC_COMPILER=aarch64-linux-gnu
+BUILD_TYPE=Debug
 
 echo "$GCC_COMPILER"
 export CC=${GCC_COMPILER}-gcc
@@ -95,9 +94,11 @@ done
 #    exit
 #fi
 
+rm -rf build
+
 TARGET_SDK="rknn_${BUILD_DEMO_NAME}_demo"
 
-TARGET_PLATFORM=${TARGET_SOC}_linux_${TARGET_ARCH}
+TARGET_PLATFORM=linux
 ROOT_PWD=$( cd "$( dirname $0 )" && cd -P "$( dirname "$SOURCE" )" && pwd )
 INSTALL_DIR=${ROOT_PWD}/install/${TARGET_PLATFORM}/${TARGET_SDK}
 BUILD_DIR=${ROOT_PWD}/build/build_${TARGET_SDK}_${TARGET_PLATFORM}_${BUILD_TYPE}
@@ -105,8 +106,6 @@ BUILD_DIR=${ROOT_PWD}/build/build_${TARGET_SDK}_${TARGET_PLATFORM}_${BUILD_TYPE}
 echo "==================================="
 echo "BUILD_DEMO_NAME=${BUILD_DEMO_NAME}"
 echo "BUILD_DEMO_PATH=${BUILD_DEMO_PATH}"
-echo "TARGET_SOC=${TARGET_SOC}"
-echo "TARGET_ARCH=${TARGET_ARCH}"
 echo "BUILD_TYPE=${BUILD_TYPE}"
 echo "ENABLE_ASAN=${ENABLE_ASAN}"
 echo "DISABLE_RGA=${DISABLE_RGA}"
@@ -126,9 +125,7 @@ fi
 
 cd ${BUILD_DIR}
 cmake ../../${BUILD_DEMO_PATH} \
-    -DTARGET_SOC=${TARGET_SOC} \
     -DCMAKE_SYSTEM_NAME=Linux \
-    -DCMAKE_SYSTEM_PROCESSOR=${TARGET_ARCH} \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
     -DENABLE_ASAN=${ENABLE_ASAN} \
     -DDISABLE_RGA=${DISABLE_RGA} \
