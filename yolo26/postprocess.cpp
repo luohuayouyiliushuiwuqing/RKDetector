@@ -528,14 +528,6 @@ int post_process(rknn_app_context_t*        app_ctx,
         int   id       = classId[n];
         float obj_conf = objProbs[i];
 
-        // logInfo("obj_conf:%f, x1:%f, y1:%f, x2:%f, y2:%f, id:%d\n",
-        //         obj_conf,
-        //         x1,
-        //         y1,
-        //         x2,
-        //         y2,
-        //         id);
-
         od_results->results[last_count].box.left =
             (int)(clamp(x1, 0, model_in_w) / letter_box->scale);
         od_results->results[last_count].box.top =

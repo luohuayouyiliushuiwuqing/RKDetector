@@ -13,6 +13,4 @@ int   post_process(rknn_app_context_t*        app_ctx,
                    float                      conf_threshold,
                    float                      nms_threshold,
                    object_detect_result_list* od_results);
-
-void  deinitPostProcess();
 #endif //_RKNN_YOLOV8_DEMO_POSTPROCESS_H_
