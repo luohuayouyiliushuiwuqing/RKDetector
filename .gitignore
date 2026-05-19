@@ -52,3 +52,6 @@ unittest/example_test_result
 unittest/env_config.py
 
 /cmake-build-debug
+
+.idea
+/.idea
