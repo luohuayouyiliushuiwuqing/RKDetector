@@ -190,16 +190,6 @@ static int quick_sort_indice_inverse(std::vector<float>& input,
     return low;
 }
 
-static float sigmoid(float x)
-{
-    return 1.0 / (1.0 + expf(-x));
-}
-
-static float unsigmoid(float y)
-{
-    return -1.0 * logf((1.0 / y) - 1.0);
-}
-
 inline static int32_t __clip(float val, float min, float max)
 {
     float f = val <= min ? min : (val >= max ? max : val);
@@ -213,19 +203,7 @@ static int8_t qnt_f32_to_affine(float f32, int32_t zp, float scale)
     return res;
 }
 
-static uint8_t qnt_f32_to_affine_u8(float f32, int32_t zp, float scale)
-{
-    float   dst_val = (f32 / scale) + zp;
-    uint8_t res     = (uint8_t)__clip(dst_val, 0, 255);
-    return res;
-}
-
 static float deqnt_affine_to_f32(int8_t qnt, int32_t zp, float scale)
-{
-    return ((float)qnt - (float)zp) * scale;
-}
-
-static float deqnt_affine_u8_to_f32(uint8_t qnt, int32_t zp, float scale)
 {
     return ((float)qnt - (float)zp) * scale;
 }
@@ -249,96 +227,6 @@ static void compute_dfl(float* tensor, int dfl_len, float* box)
         }
         box[b] = acc_sum;
     }
-}
-
-static int process_u8(uint8_t*            box_tensor,
-                      int32_t             box_zp,
-                      float               box_scale,
-                      uint8_t*            score_tensor,
-                      int32_t             score_zp,
-                      float               score_scale,
-                      uint8_t*            score_sum_tensor,
-                      int32_t             score_sum_zp,
-                      float               score_sum_scale,
-                      int                 grid_h,
-                      int                 grid_w,
-                      int                 stride,
-                      int                 dfl_len,
-                      int                 obj_class_num,
-                      std::vector<float>& boxes,
-                      std::vector<float>& objProbs,
-                      std::vector<int>&   classId,
-                      float               threshold)
-{
-    int     validCount = 0;
-    int     grid_len   = grid_h * grid_w;
-    uint8_t score_thres_u8 =
-        qnt_f32_to_affine_u8(threshold, score_zp, score_scale);
-    uint8_t score_sum_thres_u8 =
-        qnt_f32_to_affine_u8(threshold, score_sum_zp, score_sum_scale);
-
-    for (int i = 0; i < grid_h; i++)
-    {
-        for (int j = 0; j < grid_w; j++)
-        {
-            int offset       = i * grid_w + j;
-            int max_class_id = -1;
-
-            // Use score sum to quickly filter
-            if (score_sum_tensor != nullptr)
-            {
-                if (score_sum_tensor[offset] < score_sum_thres_u8)
-                {
-                    continue;
-                }
-            }
-
-            uint8_t max_score = -score_zp;
-            for (int c = 0; c < obj_class_num; c++)
-            {
-                if ((score_tensor[offset] > score_thres_u8) &&
-                    (score_tensor[offset] > max_score))
-                {
-                    max_score    = score_tensor[offset];
-                    max_class_id = c;
-                }
-                offset += grid_len;
-            }
-
-            // compute box
-            if (max_score > score_thres_u8)
-            {
-                offset = i * grid_w + j;
-                float box[4];
-                float before_dfl[dfl_len * 4];
-                for (int k = 0; k < dfl_len * 4; k++)
-                {
-                    before_dfl[k] = deqnt_affine_u8_to_f32(
-                        box_tensor[offset], box_zp, box_scale);
-                    offset += grid_len;
-                }
-                compute_dfl(before_dfl, dfl_len, box);
-
-                float x1, y1, x2, y2, w, h;
-                x1 = (-box[0] + j + 0.5) * stride;
-                y1 = (-box[1] + i + 0.5) * stride;
-                x2 = (box[2] + j + 0.5) * stride;
-                y2 = (box[3] + i + 0.5) * stride;
-                w  = x2 - x1;
-                h  = y2 - y1;
-                boxes.push_back(x1);
-                boxes.push_back(y1);
-                boxes.push_back(w);
-                boxes.push_back(h);
-
-                objProbs.push_back(
-                    deqnt_affine_u8_to_f32(max_score, score_zp, score_scale));
-                classId.push_back(max_class_id);
-                validCount++;
-            }
-        }
-    }
-    return validCount;
 }
 
 static int process_i8(int8_t*             box_tensor,
