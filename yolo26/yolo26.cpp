@@ -2,11 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "yolov8.h"
+#include "yolo26.h"
 #include "common.h"
 #include "image_utils.h"
 
-int inference_yolov8_model(rknn_app_context_t*        app_ctx,
+int inference_yolo26_model(rknn_app_context_t*        app_ctx,
                            image_buffer_t*            img,
                            object_detect_result_list* od_results)
 {
@@ -116,6 +116,5 @@ int inference_yolov8_model(rknn_app_context_t*        app_ctx,
 
     // Remeber to release rknn output
     rknn_outputs_release(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs);
-
     return 0;
 }

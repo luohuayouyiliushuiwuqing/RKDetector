@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "yolov8.h"
+#include "yolo26.h"
 #include <opencv2/opencv.hpp>
 
 int main(int argc, char** argv)
@@ -55,9 +55,8 @@ int main(int argc, char** argv)
     src_image.size      = rgb_img.total() * rgb_img.elemSize();
 
     object_detect_result_list od_results;
-
     auto                      t1 = getTimeStamp();
-    ret = inference_yolov8_model(&rknn_app_ctx, &src_image, &od_results);
+    ret = inference_yolo26_model(&rknn_app_ctx, &src_image, &od_results);
     printf("inference_yolov8_model cost %f ms\n", (getTimeStamp() - t1) * 1e-3);
     if (ret != 0)
     {

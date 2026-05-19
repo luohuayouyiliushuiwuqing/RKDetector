@@ -39,3 +39,13 @@ else()
         ${LIBJPEG_INCLUDES}
     )
 endif()
+
+
+add_library(yoloutils STATIC
+        yolo.cpp
+)
+target_include_directories(yoloutils PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${LIBRGA_INCLUDES}
+        ${LIBRKNNRT_INCLUDES}
+)

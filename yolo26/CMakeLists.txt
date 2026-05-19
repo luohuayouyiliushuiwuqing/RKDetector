@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(rknn_yolov8_demo)
+project(rknn_yolo26_demo)
 
 if (ENABLE_ASAN)
     message(STATUS "BUILD WITH ADDRESS SANITIZER")
@@ -20,7 +20,7 @@ file(GLOB SRCS ${CMAKE_CURRENT_SOURCE_DIR}/*.cc)
 add_executable(${PROJECT_NAME}
         main.cpp
         postprocess.cpp
-        yolov8.cpp
+        yolo26.cpp
 )
 
 target_link_libraries(${PROJECT_NAME}
