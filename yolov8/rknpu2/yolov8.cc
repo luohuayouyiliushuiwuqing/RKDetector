@@ -1,31 +1,43 @@
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>
 
-#include "yolov8.h"
+#include "../yolov8.h"
 #include "common.h"
 #include "file_utils.h"
 #include "image_utils.h"
 
-static void dump_tensor_attr(rknn_tensor_attr *attr)
+static void dump_tensor_attr(rknn_tensor_attr* attr)
 {
-    printf("  index=%d, name=%s, n_dims=%d, dims=[%d, %d, %d, %d], n_elems=%d, size=%d, fmt=%s, type=%s, qnt_type=%s, "
+    printf("  index=%d, name=%s, n_dims=%d, dims=[%d, %d, %d, %d], n_elems=%d, "
+           "size=%d, fmt=%s, type=%s, qnt_type=%s, "
            "zp=%d, scale=%f\n",
-           attr->index, attr->name, attr->n_dims, attr->dims[0], attr->dims[1], attr->dims[2], attr->dims[3],
-           attr->n_elems, attr->size, get_format_string(attr->fmt), get_type_string(attr->type),
-           get_qnt_type_string(attr->qnt_type), attr->zp, attr->scale);
+           attr->index,
+           attr->name,
+           attr->n_dims,
+           attr->dims[0],
+           attr->dims[1],
+           attr->dims[2],
+           attr->dims[3],
+           attr->n_elems,
+           attr->size,
+           get_format_string(attr->fmt),
+           get_type_string(attr->type),
+           get_qnt_type_string(attr->qnt_type),
+           attr->zp,
+           attr->scale);
 }
 
-int init_yolov8_model(const char *model_path, rknn_app_context_t *app_ctx)
+int init_yolov8_model(const char* model_path, rknn_app_context_t* app_ctx)
 {
-    int ret;
-    int model_len = 0;
-    char *model;
+    int          ret;
+    int          model_len = 0;
+    char*        model;
     rknn_context ctx = 0;
 
     // Load RKNN Model
-    model_len = read_data_from_file(model_path, &model);
+    model_len        = read_data_from_file(model_path, &model);
     if (model == NULL)
     {
         printf("load_model fail!\n");
@@ -48,7 +60,9 @@ int init_yolov8_model(const char *model_path, rknn_app_context_t *app_ctx)
         printf("rknn_query fail! ret=%d\n", ret);
         return -1;
     }
-    printf("model input num: %d, output num: %d\n", io_num.n_input, io_num.n_output);
+    printf("model input num: %d, output num: %d\n",
+           io_num.n_input,
+           io_num.n_output);
 
     // Get Model Input Info
     printf("input tensors:\n");
@@ -57,7 +71,10 @@ int init_yolov8_model(const char *model_path, rknn_app_context_t *app_ctx)
     for (int i = 0; i < io_num.n_input; i++)
     {
         input_attrs[i].index = i;
-        ret = rknn_query(ctx, RKNN_QUERY_INPUT_ATTR, &(input_attrs[i]), sizeof(rknn_tensor_attr));
+        ret                  = rknn_query(ctx,
+                         RKNN_QUERY_INPUT_ATTR,
+                         &(input_attrs[i]),
+                         sizeof(rknn_tensor_attr));
         if (ret != RKNN_SUCC)
         {
             printf("rknn_query fail! ret=%d\n", ret);
@@ -73,7 +90,10 @@ int init_yolov8_model(const char *model_path, rknn_app_context_t *app_ctx)
     for (int i = 0; i < io_num.n_output; i++)
     {
         output_attrs[i].index = i;
-        ret = rknn_query(ctx, RKNN_QUERY_OUTPUT_ATTR, &(output_attrs[i]), sizeof(rknn_tensor_attr));
+        ret                   = rknn_query(ctx,
+                         RKNN_QUERY_OUTPUT_ATTR,
+                         &(output_attrs[i]),
+                         sizeof(rknn_tensor_attr));
         if (ret != RKNN_SUCC)
         {
             printf("rknn_query fail! ret=%d\n", ret);
@@ -86,7 +106,8 @@ int init_yolov8_model(const char *model_path, rknn_app_context_t *app_ctx)
     app_ctx->rknn_ctx = ctx;
 
     // TODO
-    if (output_attrs[0].qnt_type == RKNN_TENSOR_QNT_AFFINE_ASYMMETRIC && output_attrs[0].type == RKNN_TENSOR_INT8)
+    if (output_attrs[0].qnt_type == RKNN_TENSOR_QNT_AFFINE_ASYMMETRIC &&
+        output_attrs[0].type == RKNN_TENSOR_INT8)
     {
         app_ctx->is_quant = true;
     }
@@ -96,10 +117,16 @@ int init_yolov8_model(const char *model_path, rknn_app_context_t *app_ctx)
     }
 
     app_ctx->io_num = io_num;
-    app_ctx->input_attrs = (rknn_tensor_attr *)malloc(io_num.n_input * sizeof(rknn_tensor_attr));
-    memcpy(app_ctx->input_attrs, input_attrs, io_num.n_input * sizeof(rknn_tensor_attr));
-    app_ctx->output_attrs = (rknn_tensor_attr *)malloc(io_num.n_output * sizeof(rknn_tensor_attr));
-    memcpy(app_ctx->output_attrs, output_attrs, io_num.n_output * sizeof(rknn_tensor_attr));
+    app_ctx->input_attrs =
+        (rknn_tensor_attr*)malloc(io_num.n_input * sizeof(rknn_tensor_attr));
+    memcpy(app_ctx->input_attrs,
+           input_attrs,
+           io_num.n_input * sizeof(rknn_tensor_attr));
+    app_ctx->output_attrs =
+        (rknn_tensor_attr*)malloc(io_num.n_output * sizeof(rknn_tensor_attr));
+    memcpy(app_ctx->output_attrs,
+           output_attrs,
+           io_num.n_output * sizeof(rknn_tensor_attr));
 
     // detect number of classes from score tensor (index 1)
     app_ctx->obj_class_num = output_attrs[1].dims[1];
@@ -109,23 +136,25 @@ int init_yolov8_model(const char *model_path, rknn_app_context_t *app_ctx)
     {
         printf("model is NCHW input fmt\n");
         app_ctx->model_channel = input_attrs[0].dims[1];
-        app_ctx->model_height = input_attrs[0].dims[2];
-        app_ctx->model_width = input_attrs[0].dims[3];
+        app_ctx->model_height  = input_attrs[0].dims[2];
+        app_ctx->model_width   = input_attrs[0].dims[3];
     }
     else
     {
         printf("model is NHWC input fmt\n");
-        app_ctx->model_height = input_attrs[0].dims[1];
-        app_ctx->model_width = input_attrs[0].dims[2];
+        app_ctx->model_height  = input_attrs[0].dims[1];
+        app_ctx->model_width   = input_attrs[0].dims[2];
         app_ctx->model_channel = input_attrs[0].dims[3];
     }
     printf("model input height=%d, width=%d, channel=%d\n",
-           app_ctx->model_height, app_ctx->model_width, app_ctx->model_channel);
+           app_ctx->model_height,
+           app_ctx->model_width,
+           app_ctx->model_channel);
 
     return 0;
 }
 
-int release_yolov8_model(rknn_app_context_t *app_ctx)
+int release_yolov8_model(rknn_app_context_t* app_ctx)
 {
     if (app_ctx->input_attrs != NULL)
     {
@@ -145,16 +174,18 @@ int release_yolov8_model(rknn_app_context_t *app_ctx)
     return 0;
 }
 
-int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, object_detect_result_list *od_results)
+int inference_yolov8_model(rknn_app_context_t*        app_ctx,
+                           image_buffer_t*            img,
+                           object_detect_result_list* od_results)
 {
-    int ret;
+    int            ret;
     image_buffer_t dst_img;
-    letterbox_t letter_box;
-    rknn_input inputs[app_ctx->io_num.n_input];
-    rknn_output outputs[app_ctx->io_num.n_output];
-    const float nms_threshold = NMS_THRESH;      // 默认的NMS阈值
-    const float box_conf_threshold = BOX_THRESH; // 默认的置信度阈值
-    int bg_color = 114;
+    letterbox_t    letter_box;
+    rknn_input     inputs[app_ctx->io_num.n_input];
+    rknn_output    outputs[app_ctx->io_num.n_output];
+    const float    nms_threshold      = NMS_THRESH; // 默认的NMS阈值
+    const float    box_conf_threshold = BOX_THRESH; // 默认的置信度阈值
+    int            bg_color           = 114;
 
     if ((!app_ctx) || !(img) || (!od_results))
     {
@@ -168,11 +199,11 @@ int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, obj
     memset(outputs, 0, sizeof(outputs));
 
     // Pre Process
-    dst_img.width = app_ctx->model_width;
-    dst_img.height = app_ctx->model_height;
-    dst_img.format = IMAGE_FORMAT_RGB888;
-    dst_img.size = get_image_size(&dst_img);
-    dst_img.virt_addr = (unsigned char *)malloc(dst_img.size);
+    dst_img.width     = app_ctx->model_width;
+    dst_img.height    = app_ctx->model_height;
+    dst_img.format    = IMAGE_FORMAT_RGB888;
+    dst_img.size      = get_image_size(&dst_img);
+    dst_img.virt_addr = (unsigned char*)malloc(dst_img.size);
     if (dst_img.virt_addr == NULL)
     {
         printf("malloc buffer size:%d fail!\n", dst_img.size);
@@ -189,9 +220,10 @@ int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, obj
 
     // Set Input Data
     inputs[0].index = 0;
-    inputs[0].type = RKNN_TENSOR_UINT8;
-    inputs[0].fmt = RKNN_TENSOR_NHWC;
-    inputs[0].size = app_ctx->model_width * app_ctx->model_height * app_ctx->model_channel;
+    inputs[0].type  = RKNN_TENSOR_UINT8;
+    inputs[0].fmt   = RKNN_TENSOR_NHWC;
+    inputs[0].size =
+        app_ctx->model_width * app_ctx->model_height * app_ctx->model_channel;
     inputs[0].buf = dst_img.virt_addr;
 
     ret = rknn_inputs_set(app_ctx->rknn_ctx, app_ctx->io_num.n_input, inputs);
@@ -214,10 +246,11 @@ int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, obj
     memset(outputs, 0, sizeof(outputs));
     for (int i = 0; i < app_ctx->io_num.n_output; i++)
     {
-        outputs[i].index = i;
+        outputs[i].index      = i;
         outputs[i].want_float = (!app_ctx->is_quant);
     }
-    ret = rknn_outputs_get(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs, NULL);
+    ret = rknn_outputs_get(
+        app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs, NULL);
     if (ret < 0)
     {
         printf("rknn_outputs_get fail! ret=%d\n", ret);
@@ -225,7 +258,12 @@ int inference_yolov8_model(rknn_app_context_t *app_ctx, image_buffer_t *img, obj
     }
 
     // Post Process
-    post_process(app_ctx, outputs, &letter_box, box_conf_threshold, nms_threshold, od_results);
+    post_process(app_ctx,
+                 outputs,
+                 &letter_box,
+                 box_conf_threshold,
+                 nms_threshold,
+                 od_results);
 
     // Remeber to release rknn output
     rknn_outputs_release(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs);

@@ -72,28 +72,28 @@ fi
 
 for demo_path in `find ./ -name ${BUILD_DEMO_NAME}`
 do
-    if [ -d "$demo_path/cpp" ]
+    if [ -d "$demo_path" ]
     then
-        BUILD_DEMO_PATH="$demo_path/cpp"
+        BUILD_DEMO_PATH="$demo_path"
         break;
     fi
 done
 
-if [[ -z "${BUILD_DEMO_PATH}" ]]
-then
-    echo "Cannot find demo: ${BUILD_DEMO_NAME}, only support:"
-
-    for demo_path in `find ./ -name cpp`
-    do
-        if [ -d "$demo_path" ]
-        then
-            dname=`dirname "$demo_path"`
-            name=`basename $dname`
-            echo "$name"
-        fi
-    done
-    exit
-fi
+#if [[ -z "${BUILD_DEMO_PATH}" ]]
+#then
+#    echo "Cannot find demo: ${BUILD_DEMO_NAME}, only support:"
+#
+#    for demo_path in `find ./ -name cpp`
+#    do
+#        if [ -d "$demo_path" ]
+#        then
+#            dname=`dirname "$demo_path"`
+#            name=`basename $dname`
+#            echo "$name"
+#        fi
+#    done
+#    exit
+#fi
 
 TARGET_SDK="rknn_${BUILD_DEMO_NAME}_demo"
 

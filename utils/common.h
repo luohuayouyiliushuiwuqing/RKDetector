@@ -5,7 +5,8 @@
  * @brief Image pixel format
  * 
  */
-typedef enum {
+typedef enum
+{
     IMAGE_FORMAT_GRAY8,
     IMAGE_FORMAT_RGB888,
     IMAGE_FORMAT_RGBA8888,
@@ -17,22 +18,24 @@ typedef enum {
  * @brief Image buffer
  * 
  */
-typedef struct {
-    int width;
-    int height;
-    int width_stride;
-    int height_stride;
+typedef struct
+{
+    int            width;
+    int            height;
+    int            width_stride;
+    int            height_stride;
     image_format_t format;
     unsigned char* virt_addr;
-    int size;
-    int fd;
+    int            size;
+    int            fd;
 } image_buffer_t;
 
 /**
  * @brief Image rectangle
  * 
  */
-typedef struct {
+typedef struct
+{
     int left;
     int top;
     int right;
@@ -43,11 +46,12 @@ typedef struct {
  * @brief Image obb rectangle
  * 
  */
-typedef struct {
-    int x;
-    int y;
-    int w;
-    int h;
+typedef struct
+{
+    int   x;
+    int   y;
+    int   w;
+    int   h;
     float angle;
 } image_obb_box_t;
 

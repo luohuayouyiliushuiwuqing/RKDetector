@@ -4,12 +4,12 @@
 #include <string.h>
 
 #include "yolov8.h"
-#include "image_utils.h"
 #include "file_utils.h"
+#include "image_utils.h"
 
 #include <opencv2/opencv.hpp>
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
     if (argc != 3)
     {
@@ -17,10 +17,10 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    const char *model_path = argv[1];
-    const char *image_path = argv[2];
+    const char*        model_path = argv[1];
+    const char*        image_path = argv[2];
 
-    int ret;
+    int                ret;
     rknn_app_context_t rknn_app_ctx;
     memset(&rknn_app_ctx, 0, sizeof(rknn_app_context_t));
 
@@ -29,7 +29,8 @@ int main(int argc, char **argv)
     ret = init_yolov8_model(model_path, &rknn_app_ctx);
     if (ret != 0)
     {
-        printf("init_yolov8_model fail! ret=%d model_path=%s\n", ret, model_path);
+        printf(
+            "init_yolov8_model fail! ret=%d model_path=%s\n", ret, model_path);
         // goto out;
     }
 
@@ -49,11 +50,11 @@ int main(int argc, char **argv)
     // Fill image_buffer_t from cv::Mat
     image_buffer_t src_image;
     memset(&src_image, 0, sizeof(image_buffer_t));
-    src_image.width = rgb_img.cols;
-    src_image.height = rgb_img.rows;
-    src_image.format = IMAGE_FORMAT_RGB888;
+    src_image.width     = rgb_img.cols;
+    src_image.height    = rgb_img.rows;
+    src_image.format    = IMAGE_FORMAT_RGB888;
     src_image.virt_addr = rgb_img.data;
-    src_image.size = rgb_img.total() * rgb_img.elemSize();
+    src_image.size      = rgb_img.total() * rgb_img.elemSize();
 
     object_detect_result_list od_results;
 
@@ -68,10 +69,13 @@ int main(int argc, char **argv)
     char text[256];
     for (int i = 0; i < od_results.count; i++)
     {
-        object_detect_result *det_result = &(od_results.results[i]);
-        printf("%s @ (%d %d %d %d) %.3f\n", coco_cls_to_name(det_result->cls_id),
-               det_result->box.left, det_result->box.top,
-               det_result->box.right, det_result->box.bottom,
+        object_detect_result* det_result = &(od_results.results[i]);
+        printf("%s @ (%d %d %d %d) %.3f\n",
+               coco_cls_to_name(det_result->cls_id),
+               det_result->box.left,
+               det_result->box.top,
+               det_result->box.right,
+               det_result->box.bottom,
                det_result->prop);
 
         int x1 = det_result->box.left;
@@ -80,25 +84,36 @@ int main(int argc, char **argv)
         int y2 = det_result->box.bottom;
 
         // Draw bounding box (blue)
-        cv::rectangle(bgr_img, cv::Point(x1, y1), cv::Point(x2, y2),
-                      cv::Scalar(255, 0, 0), 3);
+        cv::rectangle(bgr_img,
+                      cv::Point(x1, y1),
+                      cv::Point(x2, y2),
+                      cv::Scalar(255, 0, 0),
+                      3);
 
         // Draw label text (red)
-        sprintf(text, "%s %.1f%%", coco_cls_to_name(det_result->cls_id), det_result->prop * 100);
-        cv::putText(bgr_img, text, cv::Point(x1, y1 - 5),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
+        sprintf(text,
+                "%s %.1f%%",
+                coco_cls_to_name(det_result->cls_id),
+                det_result->prop * 100);
+        cv::putText(bgr_img,
+                    text,
+                    cv::Point(x1, y1 - 5),
+                    cv::FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    cv::Scalar(0, 0, 255),
+                    1);
     }
 
     cv::imwrite("out.png", bgr_img);
 
-// out:
-//     deinit_post_process();
-//
-//     ret = release_yolov8_model(&rknn_app_ctx);
-//     if (ret != 0)
-//     {
-//         printf("release_yolov8_model fail! ret=%d\n", ret);
-//     }
+    // out:
+    //     deinit_post_process();
+    //
+    //     ret = release_yolov8_model(&rknn_app_ctx);
+    //     if (ret != 0)
+    //     {
+    //         printf("release_yolov8_model fail! ret=%d\n", ret);
+    //     }
 
     return 0;
 }

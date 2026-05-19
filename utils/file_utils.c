@@ -7,15 +7,17 @@
 unsigned char* load_model(const char* filename, int* model_size)
 {
     FILE* fp = fopen(filename, "rb");
-    if (fp == NULL) {
+    if (fp == NULL)
+    {
         printf("fopen %s fail!\n", filename);
         return NULL;
     }
     fseek(fp, 0, SEEK_END);
-    int model_len = ftell(fp);
-    unsigned char* model = (unsigned char*)malloc(model_len);
+    int            model_len = ftell(fp);
+    unsigned char* model     = (unsigned char*)malloc(model_len);
     fseek(fp, 0, SEEK_SET);
-    if (model_len != fread(model, 1, model_len, fp)) {
+    if (model_len != fread(model, 1, model_len, fp))
+    {
         printf("fread %s fail!\n", filename);
         free(model);
         fclose(fp);
@@ -26,37 +28,41 @@ unsigned char* load_model(const char* filename, int* model_size)
     return model;
 }
 
-int read_data_from_file(const char *path, char **out_data)
+int read_data_from_file(const char* path, char** out_data)
 {
-    FILE *fp = fopen(path, "rb");
-    if(fp == NULL) {
+    FILE* fp = fopen(path, "rb");
+    if (fp == NULL)
+    {
         printf("fopen %s fail!\n", path);
         return -1;
     }
     fseek(fp, 0, SEEK_END);
-    int file_size = ftell(fp);
-    char *data = (char *)malloc(file_size+1);
+    int   file_size = ftell(fp);
+    char* data      = (char*)malloc(file_size + 1);
     data[file_size] = 0;
     fseek(fp, 0, SEEK_SET);
-    if(file_size != fread(data, 1, file_size, fp)) {
+    if (file_size != fread(data, 1, file_size, fp))
+    {
         printf("fread %s fail!\n", path);
         free(data);
         fclose(fp);
         return -1;
     }
-    if(fp) {
+    if (fp)
+    {
         fclose(fp);
     }
     *out_data = data;
     return file_size;
 }
 
-int write_data_to_file(const char *path, const char *data, unsigned int size)
+int write_data_to_file(const char* path, const char* data, unsigned int size)
 {
-    FILE *fp;
+    FILE* fp;
 
     fp = fopen(path, "w");
-    if(fp == NULL) {
+    if (fp == NULL)
+    {
         printf("open error: %s\n", path);
         return -1;
     }
@@ -70,13 +76,13 @@ int write_data_to_file(const char *path, const char *data, unsigned int size)
 
 int count_lines(FILE* file)
 {
-    int count = 0;
+    int  count = 0;
     char ch;
 
-    while(!feof(file))
+    while (!feof(file))
     {
         ch = fgetc(file);
-        if(ch == '\n')
+        if (ch == '\n')
         {
             count++;
         }
@@ -90,7 +96,8 @@ int count_lines(FILE* file)
 char** read_lines_from_file(const char* filename, int* line_count)
 {
     FILE* file = fopen(filename, "r");
-    if (file == NULL) {
+    if (file == NULL)
+    {
         printf("Failed to open the file.\n");
         return NULL;
     }
@@ -101,12 +108,13 @@ char** read_lines_from_file(const char* filename, int* line_count)
     memset(lines, 0, num_lines * sizeof(char*));
 
     char buffer[MAX_TEXT_LINE_LENGTH];
-    int line_index = 0;
+    int  line_index = 0;
 
-    while (fgets(buffer, sizeof(buffer), file) != NULL) {
-        buffer[strcspn(buffer, "\n")] = '\0';  // 移除换行符
+    while (fgets(buffer, sizeof(buffer), file) != NULL)
+    {
+        buffer[strcspn(buffer, "\n")] = '\0'; // 移除换行符
 
-        lines[line_index] = (char*)malloc(strlen(buffer) + 1);
+        lines[line_index]             = (char*)malloc(strlen(buffer) + 1);
         strcpy(lines[line_index], buffer);
 
         line_index++;
@@ -120,8 +128,10 @@ char** read_lines_from_file(const char* filename, int* line_count)
 
 void free_lines(char** lines, int line_count)
 {
-    for (int i = 0; i < line_count; i++) {
-        if (lines[i] != NULL) {
+    for (int i = 0; i < line_count; i++)
+    {
+        if (lines[i] != NULL)
+        {
             free(lines[i]);
         }
     }
