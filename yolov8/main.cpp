@@ -5,6 +5,14 @@
 #include "yolov8.h"
 
 #include <opencv2/opencv.hpp>
+#include <sys/time.h>
+
+static uint64_t getTimeStamp()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000000 + tv.tv_usec;
+}
 
 int main(int argc, char** argv)
 {
@@ -56,7 +64,9 @@ int main(int argc, char** argv)
 
     object_detect_result_list od_results;
 
+    auto                      t1 = getTimeStamp();
     ret = inference_yolov8_model(&rknn_app_ctx, &src_image, &od_results);
+    printf("inference_yolov8_model cost %f ms\n", (getTimeStamp() - t1) * 1e-3);
     if (ret != 0)
     {
         printf("inference_yolov8_model fail! ret=%d\n", ret);

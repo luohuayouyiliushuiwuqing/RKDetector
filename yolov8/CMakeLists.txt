@@ -41,32 +41,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
         ${LIBOPENCV_INCLUDES}
 )
 
-# zero-copy variant
-add_executable(${PROJECT_NAME}_zero_copy
-        main.cpp
-        postprocess.cpp
-        yolov8_zero_copy.cpp
-)
-
-target_compile_definitions(${PROJECT_NAME}_zero_copy PRIVATE ZERO_COPY)
-
-target_link_libraries(${PROJECT_NAME}_zero_copy
-        imageutils
-        fileutils
-        ${LIBRKNNRT}
-        ${LIBOPENCV}
-        dl
-)
 
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
-target_link_libraries(${PROJECT_NAME}_zero_copy Threads::Threads)
-
-target_include_directories(${PROJECT_NAME}_zero_copy PRIVATE
-        ${LIBRKNNRT_INCLUDES}
-        ${LIBOPENCV_INCLUDES}
-)
-install(TARGETS ${PROJECT_NAME}_zero_copy DESTINATION .)
 
 install(TARGETS ${PROJECT_NAME} DESTINATION .)
 install(FILES model/drone.png DESTINATION model)

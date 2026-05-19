@@ -147,5 +147,4 @@ else
     echo -e "\e[91mInstall directory \"$INSTALL_DIR\" does not exist, please check!\e[0m"
 fi
 
-scp  -r /home/igs/CLionProjects/RKDetector/install/linux/rknn_yolov8_demo/rknn_yolov8_demo_zero_copy   182:/opt/install/rk3588_linux_aarch64/rknn_yolov8_demo/rknn_yolov8_demo_zero_copy
 scp  -r /home/igs/CLionProjects/RKDetector/install/linux/rknn_yolov8_demo/rknn_yolov8_demo             182:/opt/install/rk3588_linux_aarch64/rknn_yolov8_demo/rknn_yolov8_demo
