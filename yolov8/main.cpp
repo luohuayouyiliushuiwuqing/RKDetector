@@ -28,16 +28,17 @@ int main(int argc, char** argv)
     {
         printf(
             "init_yolov8_model fail! ret=%d model_path=%s\n", ret, model_path);
-        // goto out;
+        deinit_post_process();
+        return -1;
     }
 
-    // Read image with OpenCV
     cv::Mat bgr_img = cv::imread(image_path, cv::IMREAD_COLOR);
     if (bgr_img.empty())
     {
         printf("read image fail! image_path=%s\n", image_path);
-        ret = -1;
-        // goto out;
+        release_yolov8_model(&rknn_app_ctx);
+        deinit_post_process();
+        return -1;
     }
 
     // Convert BGR to RGB for inference
@@ -59,7 +60,9 @@ int main(int argc, char** argv)
     if (ret != 0)
     {
         printf("inference_yolov8_model fail! ret=%d\n", ret);
-        // goto out;
+        release_yolov8_model(&rknn_app_ctx);
+        deinit_post_process();
+        return -1;
     }
 
     // Draw results with OpenCV
@@ -103,14 +106,8 @@ int main(int argc, char** argv)
 
     cv::imwrite("out.png", bgr_img);
 
-    // out:
-    //     deinit_post_process();
-    //
-    //     ret = release_yolov8_model(&rknn_app_ctx);
-    //     if (ret != 0)
-    //     {
-    //         printf("release_yolov8_model fail! ret=%d\n", ret);
-    //     }
+    release_yolov8_model(&rknn_app_ctx);
+    deinit_post_process();
 
     return 0;
 }

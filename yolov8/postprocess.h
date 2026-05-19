@@ -4,7 +4,6 @@
 #include "common.h"
 #include "image_utils.h"
 
-#define OBJ_NAME_MAX_SIZE 64
 #define OBJ_NUMB_MAX_SIZE 128
 #define NMS_THRESH        0.45
 #define BOX_THRESH        0.25

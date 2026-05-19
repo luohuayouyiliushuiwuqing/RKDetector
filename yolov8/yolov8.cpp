@@ -52,6 +52,19 @@ int init_yolov8_model(const char* model_path, rknn_app_context_t* app_ctx)
         return -1;
     }
 
+    rknn_sdk_version version;
+    ret = rknn_query(
+        ctx, RKNN_QUERY_SDK_VERSION, &version, sizeof(rknn_sdk_version));
+
+    if (ret != RKNN_SUCC)
+    {
+        printf("rknn query vision failed \n");
+        return -1;
+    }
+    printf("sdk api version: %s driver version: %s",
+           version.api_version,
+           version.drv_version);
+
     // Get Model Input Output Number
     rknn_input_output_num io_num;
     ret = rknn_query(ctx, RKNN_QUERY_IN_OUT_NUM, &io_num, sizeof(io_num));
@@ -198,24 +211,41 @@ int inference_yolov8_model(rknn_app_context_t*        app_ctx,
     memset(inputs, 0, sizeof(inputs));
     memset(outputs, 0, sizeof(outputs));
 
+    letter_box.scale  = 1;
+    letter_box.x_pad  = 0;
+    letter_box.y_pad  = 0;
+
     // Pre Process
     dst_img.width     = app_ctx->model_width;
     dst_img.height    = app_ctx->model_height;
     dst_img.format    = IMAGE_FORMAT_RGB888;
     dst_img.size      = get_image_size(&dst_img);
-    dst_img.virt_addr = (unsigned char*)malloc(dst_img.size);
-    if (dst_img.virt_addr == NULL)
-    {
-        printf("malloc buffer size:%d fail!\n", dst_img.size);
-        return -1;
-    }
+    dst_img.virt_addr = nullptr;
 
-    // letterbox
-    ret = convert_image_with_letterbox(img, &dst_img, &letter_box, bg_color);
-    if (ret < 0)
+    printf("img.height=%d, img.width=%d, img.format=%d\n",
+           img->height,
+           img->width,
+           img->format);
+    printf("dst_img.height=%d, dst_img.width=%d, dst_img.format=%d\n",
+           dst_img.height,
+           dst_img.width,
+           dst_img.format);
+
+    if (img->height != dst_img.height || img->width != dst_img.width)
     {
-        printf("convert_image_with_letterbox fail! ret=%d\n", ret);
-        return -1;
+        // letterbox
+        dst_img.virt_addr = static_cast<unsigned char*>(malloc(dst_img.size));
+        ret =
+            convert_image_with_letterbox(img, &dst_img, &letter_box, bg_color);
+        if (ret < 0)
+        {
+            printf("convert_image_with_letterbox fail! ret=%d\n", ret);
+            return -1;
+        }
+    }
+    else
+    {
+        dst_img.virt_addr = img->virt_addr;
     }
 
     // Set Input Data
@@ -254,7 +284,7 @@ int inference_yolov8_model(rknn_app_context_t*        app_ctx,
     if (ret < 0)
     {
         printf("rknn_outputs_get fail! ret=%d\n", ret);
-        goto out;
+        return ret;
     }
 
     // Post Process
@@ -267,12 +297,4 @@ int inference_yolov8_model(rknn_app_context_t*        app_ctx,
 
     // Remeber to release rknn output
     rknn_outputs_release(app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs);
-
-out:
-    if (dst_img.virt_addr != NULL)
-    {
-        free(dst_img.virt_addr);
-    }
-
-    return ret;
 }

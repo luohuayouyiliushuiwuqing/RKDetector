@@ -37,7 +37,6 @@ find_package(Threads REQUIRED)
 target_link_libraries(${PROJECT_NAME} Threads::Threads)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
-        cpp
         ${LIBRKNNRT_INCLUDES}
         ${LIBOPENCV_INCLUDES}
 )
@@ -64,13 +63,12 @@ find_package(Threads REQUIRED)
 target_link_libraries(${PROJECT_NAME}_zero_copy Threads::Threads)
 
 target_include_directories(${PROJECT_NAME}_zero_copy PRIVATE
-        cpp
         ${LIBRKNNRT_INCLUDES}
         ${LIBOPENCV_INCLUDES}
 )
-install(TARGETS ${PROJECT_NAME}_zero_copy DESTINATION cpp)
+install(TARGETS ${PROJECT_NAME}_zero_copy DESTINATION .)
 
-install(TARGETS ${PROJECT_NAME} DESTINATION cpp)
+install(TARGETS ${PROJECT_NAME} DESTINATION .)
 install(FILES model/drone.png DESTINATION model)
 install(FILES model/drone.txt DESTINATION model)
 file(GLOB RKNN_FILES "${CMAKE_CURRENT_SOURCE_DIR}/model/*.rknn")
