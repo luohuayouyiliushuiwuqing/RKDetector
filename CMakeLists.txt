@@ -2,6 +2,16 @@ cmake_minimum_required(VERSION 3.10)
 
 project(rknn_demo)
 
+# Log level: 1=ERROR, 2=WARN, 3=INFO, 4=DEBUG
+if(NOT DEFINED LOG_LEVEL)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        set(LOG_LEVEL 4)
+    else()
+        set(LOG_LEVEL 3)
+    endif()
+endif()
+add_definitions(-DLOG_LEVEL=${LOG_LEVEL})
+
 add_subdirectory(3rdparty 3rdparty.out)
 add_subdirectory(utils utils.out)
 

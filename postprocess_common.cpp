@@ -1,4 +1,5 @@
 #include "postprocess_common.h"
+#include "log.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -13,23 +14,23 @@ static int   loaded_label_count = 0;
 
 void         dump_tensor_attr(rknn_tensor_attr* attr)
 {
-    printf("  index=%d, name=%s, n_dims=%d, dims=[%d, %d, %d, %d], n_elems=%d, "
-           "size=%d, fmt=%s, type=%s, qnt_type=%s, "
-           "zp=%d, scale=%f\n",
-           attr->index,
-           attr->name,
-           attr->n_dims,
-           attr->dims[0],
-           attr->dims[1],
-           attr->dims[2],
-           attr->dims[3],
-           attr->n_elems,
-           attr->size,
-           get_format_string(attr->fmt),
-           get_type_string(attr->type),
-           get_qnt_type_string(attr->qnt_type),
-           attr->zp,
-           attr->scale);
+    LOG_DEBUG("  index=%d, name=%s, n_dims=%d, dims=[%d, %d, %d, %d], "
+              "n_elems=%d, size=%d, fmt=%s, type=%s, qnt_type=%s, "
+              "zp=%d, scale=%f",
+              attr->index,
+              attr->name,
+              attr->n_dims,
+              attr->dims[0],
+              attr->dims[1],
+              attr->dims[2],
+              attr->dims[3],
+              attr->n_elems,
+              attr->size,
+              get_format_string(attr->fmt),
+              get_type_string(attr->type),
+              get_qnt_type_string(attr->qnt_type),
+              attr->zp,
+              attr->scale);
 }
 static char* readLine(FILE* fp, char* buffer, int* len)
 {
@@ -78,7 +79,7 @@ static int readLines(const char* fileName, char* lines[], int max_line)
 
     if (file == NULL)
     {
-        printf("Open %s fail!\n", fileName);
+        LOG_ERROR("Open %s fail!", fileName);
         return -1;
     }
 
@@ -96,7 +97,7 @@ static int readLines(const char* fileName, char* lines[], int max_line)
 
 static int loadLabelName(const char* locationFilename, char* label[])
 {
-    printf("load lable %s\n", locationFilename);
+    LOG_INFO("load label %s", locationFilename);
     loaded_label_count = readLines(locationFilename, label, OBJ_NUMB_MAX_SIZE);
     return 0;
 }
@@ -251,7 +252,7 @@ int init_post_process()
     ret     = loadLabelName(LABEL_NALE_TXT_PATH, labels);
     if (ret < 0)
     {
-        printf("Load %s failed!\n", LABEL_NALE_TXT_PATH);
+        LOG_ERROR("Load %s failed!", LABEL_NALE_TXT_PATH);
         return -1;
     }
     return 0;

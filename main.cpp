@@ -1,4 +1,5 @@
 #include "inference.h"
+#include "log.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -9,7 +10,7 @@ int main(int argc, char** argv)
 {
     if (argc != 3)
     {
-        printf("%s <model_path> <image_path>\n", argv[0]);
+        LOG_ERROR("usage: %s <model_path> <image_path>", argv[0]);
         return -1;
     }
 
@@ -25,7 +26,7 @@ int main(int argc, char** argv)
     ret = init_yolo_model(model_path, &rknn_app_ctx);
     if (ret != 0)
     {
-        printf("init model fail! ret=%d model_path=%s\n", ret, model_path);
+        LOG_ERROR("init model fail! ret=%d model_path=%s", ret, model_path);
         deinit_post_process();
         return -1;
     }
@@ -33,7 +34,7 @@ int main(int argc, char** argv)
     cv::Mat bgr_img = cv::imread(image_path, cv::IMREAD_COLOR);
     if (bgr_img.empty())
     {
-        printf("read image fail! image_path=%s\n", image_path);
+        LOG_ERROR("read image fail! image_path=%s", image_path);
         release_yolo_model(&rknn_app_ctx);
         deinit_post_process();
         return -1;
@@ -56,10 +57,10 @@ int main(int argc, char** argv)
 
     auto                      t1 = getTimeStamp();
     ret = inference_model(&rknn_app_ctx, &src_image, &od_results);
-    printf("inference_model cost %f ms\n", (getTimeStamp() - t1) * 1e-3);
+    LOG_INFO("inference_model cost %f ms", (getTimeStamp() - t1) * 1e-3);
     if (ret != 0)
     {
-        printf("inference model fail! ret=%d\n", ret);
+        LOG_ERROR("inference model fail! ret=%d", ret);
         release_yolo_model(&rknn_app_ctx);
         deinit_post_process();
         return -1;
@@ -70,13 +71,13 @@ int main(int argc, char** argv)
     for (int i = 0; i < od_results.count; i++)
     {
         object_detect_result* det_result = &(od_results.results[i]);
-        printf("%s @ (%d %d %d %d) %.3f\n",
-               coco_cls_to_name(det_result->cls_id),
-               det_result->box.left,
-               det_result->box.top,
-               det_result->box.right,
-               det_result->box.bottom,
-               det_result->prop);
+        LOG_INFO("%s @ (%d %d %d %d) %.3f",
+                 coco_cls_to_name(det_result->cls_id),
+                 det_result->box.left,
+                 det_result->box.top,
+                 det_result->box.right,
+                 det_result->box.bottom,
+                 det_result->prop);
 
         int x1 = det_result->box.left;
         int y1 = det_result->box.top;

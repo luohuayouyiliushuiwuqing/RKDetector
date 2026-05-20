@@ -6,6 +6,7 @@
 
 #include "im2d.h"
 #include "drmrga.h"
+#include "log.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_NO_THREAD_LOCALS
@@ -44,26 +45,26 @@ static int read_image_jpeg(const char* path, image_buffer_t* image)
 
     if ((jpegFile = fopen(path, "rb")) == NULL)
     {
-        printf("open input file failure\n");
+        LOG_ERROR("open input file failure");
     }
     if (fseek(jpegFile, 0, SEEK_END) < 0 || (size = ftell(jpegFile)) < 0 ||
         fseek(jpegFile, 0, SEEK_SET) < 0)
     {
-        printf("determining input file size failure\n");
+        LOG_ERROR("determining input file size failure");
     }
     if (size == 0)
     {
-        printf("determining input file size, Input file contains no data\n");
+        LOG_ERROR("determining input file size, Input file contains no data");
     }
     jpegSize = (unsigned long)size;
     if ((jpegBuf = (unsigned char*)malloc(jpegSize * sizeof(unsigned char))) ==
         NULL)
     {
-        printf("allocating JPEG buffer\n");
+        LOG_ERROR("allocating JPEG buffer");
     }
     if (fread(jpegBuf, jpegSize, 1, jpegFile) < 1)
     {
-        printf("reading input file");
+        LOG_ERROR("reading input file");
     }
     fclose(jpegFile);
     jpegFile        = NULL;
@@ -83,9 +84,9 @@ static int read_image_jpeg(const char* path, image_buffer_t* image)
                               &colorspace);
     if (ret < 0)
     {
-        printf("header file error, errorStr:%s, errorCode:%d\n",
-               tjGetErrorStr(),
-               tjGetErrorCode(handle));
+        LOG_ERROR("header file error, errorStr:%s, errorCode:%d",
+                  tjGetErrorStr(),
+                  tjGetErrorCode(handle));
         return -1;
     }
 
@@ -93,29 +94,29 @@ static int read_image_jpeg(const char* path, image_buffer_t* image)
     int crop_width  = origin_width / 16 * 16;
     int crop_height = origin_height / 16 * 16;
 
-    printf("origin size=%dx%d crop size=%dx%d\n",
-           origin_width,
-           origin_height,
-           crop_width,
-           crop_height);
+    LOG_INFO("origin size=%dx%d crop size=%dx%d",
+             origin_width,
+             origin_height,
+             crop_width,
+             crop_height);
 
     // gettimeofday(&tv1, NULL);
     ret = tjDecompressHeader3(
         handle, jpegBuf, size, &width, &height, &subsample, &colorspace);
     if (ret < 0)
     {
-        printf("header file error, errorStr:%s, errorCode:%d\n",
-               tjGetErrorStr(),
-               tjGetErrorCode(handle));
+        LOG_ERROR("header file error, errorStr:%s, errorCode:%d",
+                  tjGetErrorStr(),
+                  tjGetErrorCode(handle));
         return -1;
     }
-    printf("input image: %d x %d, subsampling: %s, colorspace: %s, "
-           "orientation: %d\n",
-           width,
-           height,
-           subsampName[subsample],
-           colorspaceName[colorspace],
-           orientation);
+    LOG_INFO("input image: %d x %d, subsampling: %s, colorspace: %s, "
+             "orientation: %d",
+             width,
+             height,
+             subsampName[subsample],
+             colorspaceName[colorspace],
+             orientation);
     int            sw_out_size = width * height * 3;
     unsigned char* sw_out_buf  = image->virt_addr;
     if (sw_out_buf == NULL)
@@ -125,7 +126,7 @@ static int read_image_jpeg(const char* path, image_buffer_t* image)
     }
     if (sw_out_buf == NULL)
     {
-        printf("sw_out_buf is NULL\n");
+        LOG_ERROR("sw_out_buf is NULL");
         goto out;
     }
 
@@ -145,16 +146,16 @@ static int read_image_jpeg(const char* path, image_buffer_t* image)
     // ret = tjDecompressToYUV2(handle, jpeg_buf, size, dst_buf, *width, padding, *height, flags);
     if ((0 != tjGetErrorCode(handle)) && (ret < 0))
     {
-        printf("error : decompress to yuv failed, errorStr:%s, errorCode:%d\n",
-               tjGetErrorStr(),
-               tjGetErrorCode(handle));
+        LOG_ERROR("decompress to yuv failed, errorStr:%s, errorCode:%d",
+                  tjGetErrorStr(),
+                  tjGetErrorCode(handle));
         goto out;
     }
     if ((0 == tjGetErrorCode(handle)) && (ret < 0))
     {
-        printf("warning : errorStr:%s, errorCode:%d\n",
-               tjGetErrorStr(),
-               tjGetErrorCode(handle));
+        LOG_WARN("errorStr:%s, errorCode:%d",
+                 tjGetErrorStr(),
+                 tjGetErrorCode(handle));
     }
     tjDestroy(handle);
     // gettimeofday(&tv2, NULL);
@@ -205,8 +206,8 @@ write_image_jpeg(const char* path, int quality, const image_buffer_t* image)
     }
     else
     {
-        printf("write_image_jpeg: pixel format %d not support\n",
-               image->format);
+        LOG_ERROR("write_image_jpeg: pixel format %d not support",
+                  image->format);
         return -1;
     }
 
@@ -241,7 +242,7 @@ static int read_image_raw(const char* path, image_buffer_t* image)
     FILE* fp = fopen(path, "rb");
     if (fp == NULL)
     {
-        printf("fopen %s fail!\n", path);
+        LOG_ERROR("fopen %s fail!", path);
         return -1;
     }
     fseek(fp, 0, SEEK_END);
@@ -255,7 +256,7 @@ static int read_image_raw(const char* path, image_buffer_t* image)
     fseek(fp, 0, SEEK_SET);
     if (file_size != fread(data, 1, file_size, fp))
     {
-        printf("fread %s fail!\n", path);
+        LOG_ERROR("fread %s fail!", path);
         free(data);
         return -1;
     }
@@ -279,7 +280,7 @@ static int read_image_stb(const char* path, image_buffer_t* image)
     unsigned char* pixeldata = stbi_load(path, &w, &h, &c, 0);
     if (!pixeldata)
     {
-        printf("error: read image %s fail\n", path);
+        LOG_ERROR("read image %s fail", path);
         return -1;
     }
     // printf("load image wxhxc=%dx%dx%d path=%s\n", w, h, c, path);
@@ -344,12 +345,12 @@ int write_image(const char* path, const image_buffer_t* img)
     int   height  = img->height;
     int   channel = 3;
     void* data    = img->virt_addr;
-    printf("write_image path: %s width=%d height=%d channel=%d data=%p\n",
-           path,
-           width,
-           height,
-           channel,
-           data);
+    LOG_INFO("write_image path: %s width=%d height=%d channel=%d data=%p",
+             path,
+             width,
+             height,
+             channel,
+             data);
 
     const char* _ext = strrchr(path, '.');
     if (!_ext)
@@ -403,7 +404,7 @@ static int crop_and_scale_image_c(int            channel,
 {
     if (dst == NULL)
     {
-        printf("dst buffer is null\n");
+        LOG_ERROR("dst buffer is null");
         return -1;
     }
 
@@ -654,14 +655,14 @@ static int convert_image_cpu(image_buffer_t* src,
     }
     else
     {
-        printf("no support format %d\n", src->format);
+        LOG_ERROR("no support format %d", src->format);
     }
     if (reti != 0)
     {
-        printf("convert_image_cpu fail %d\n", reti);
+        LOG_ERROR("convert_image_cpu fail %d", reti);
         return -1;
     }
-    printf("finish\n");
+    LOG_DEBUG("finish");
     return 0;
 }
 
@@ -816,7 +817,7 @@ static int convert_image_rga(image_buffer_t* src_img,
         }
         if (rga_handle_src <= 0)
         {
-            printf("src handle error %d\n", rga_handle_src);
+            LOG_ERROR("src handle error %d", rga_handle_src);
             ret = -1;
             goto err;
         }
@@ -859,7 +860,7 @@ static int convert_image_rga(image_buffer_t* src_img,
         }
         if (rga_handle_dst <= 0)
         {
-            printf("dst handle error %d\n", rga_handle_dst);
+            LOG_ERROR("dst handle error %d", rga_handle_dst);
             ret = -1;
             goto err;
         }
@@ -894,12 +895,12 @@ static int convert_image_rga(image_buffer_t* src_img,
         p_imcolor[1]      = color;
         p_imcolor[2]      = color;
         p_imcolor[3]      = color;
-        printf("fill dst image (x y w h)=(%d %d %d %d) with color=0x%x\n",
-               dst_whole_rect.x,
-               dst_whole_rect.y,
-               dst_whole_rect.width,
-               dst_whole_rect.height,
-               imcolor);
+        LOG_DEBUG("fill dst image (x y w h)=(%d %d %d %d) with color=0x%x",
+                  dst_whole_rect.x,
+                  dst_whole_rect.y,
+                  dst_whole_rect.width,
+                  dst_whole_rect.height,
+                  imcolor);
         ret_rga = imfill(rga_buf_dst, dst_whole_rect, imcolor);
         if (ret_rga <= 0)
         {
@@ -910,7 +911,7 @@ static int convert_image_rga(image_buffer_t* src_img,
             }
             else
             {
-                printf("Warning: Can not fill color on target image\n");
+                LOG_WARN("Can not fill color on target image");
             }
         }
     }
@@ -920,8 +921,8 @@ static int convert_image_rga(image_buffer_t* src_img,
         improcess(rga_buf_src, rga_buf_dst, pat, srect, drect, prect, usage);
     if (ret_rga <= 0)
     {
-        printf("Error on improcess STATUS=%d\n", ret_rga);
-        printf("RGA error message: %s\n", imStrError((IM_STATUS)ret_rga));
+        LOG_ERROR("Error on improcess STATUS=%d", ret_rga);
+        LOG_ERROR("RGA error message: %s", imStrError((IM_STATUS)ret_rga));
         ret = -1;
     }
 
@@ -948,7 +949,7 @@ int convert_image(image_buffer_t* src_img,
 {
     int ret;
 #if defined(DISABLE_RGA)
-    printf("convert image use cpu\n");
+    LOG_INFO("convert image use cpu");
     ret = convert_image_cpu(src_img, dst_img, src_box, dst_box, color);
 #else
     if (src_img->width % 16 == 0 && dst_img->width % 16 == 0)
@@ -956,13 +957,13 @@ int convert_image(image_buffer_t* src_img,
         ret = convert_image_rga(src_img, dst_img, src_box, dst_box, color);
         if (ret != 0)
         {
-            printf("try convert image use cpu\n");
+            LOG_INFO("try convert image use cpu");
             ret = convert_image_cpu(src_img, dst_img, src_box, dst_box, color);
         }
     }
     else
     {
-        printf("src width is not 16-aligned, convert image use cpu\n");
+        LOG_INFO("src width is not 16-aligned, convert image use cpu");
         ret = convert_image_cpu(src_img, dst_img, src_box, dst_box, color);
     }
 #endif
@@ -1055,18 +1056,18 @@ int convert_image_with_letterbox(image_buffer_t* src_image,
         dst_box.right = dst_box.left + resize_w - 1;
         _left_offset  = dst_box.left;
     }
-    printf("scale=%f dst_box=(%d %d %d %d) allow_slight_change=%d "
-           "_left_offset=%d _top_offset=%d padding_w=%d padding_h=%d\n",
-           scale,
-           dst_box.left,
-           dst_box.top,
-           dst_box.right,
-           dst_box.bottom,
-           allow_slight_change,
-           _left_offset,
-           _top_offset,
-           padding_w,
-           padding_h);
+    LOG_DEBUG("scale=%f dst_box=(%d %d %d %d) allow_slight_change=%d "
+              "_left_offset=%d _top_offset=%d padding_w=%d padding_h=%d",
+              scale,
+              dst_box.left,
+              dst_box.top,
+              dst_box.right,
+              dst_box.bottom,
+              allow_slight_change,
+              _left_offset,
+              _top_offset,
+              padding_w,
+              padding_h);
 
     //set offset and scale
     if (letterbox != NULL)
@@ -1083,7 +1084,7 @@ int convert_image_with_letterbox(image_buffer_t* src_image,
         dst_image->virt_addr = (uint8_t*)malloc(dst_size);
         if (dst_image->virt_addr == NULL)
         {
-            printf("malloc size %d error\n", dst_size);
+            LOG_ERROR("malloc size %d error", dst_size);
             return -1;
         }
     }

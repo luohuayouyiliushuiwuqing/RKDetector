@@ -5,6 +5,7 @@
 #include "inference.h"
 #include "common.h"
 #include "image_utils.h"
+#include "log.h"
 
 int init_yolo_model(const char* model_path, rknn_app_context_t* app_ctx)
 {
@@ -15,7 +16,7 @@ int init_yolo_model(const char* model_path, rknn_app_context_t* app_ctx)
     ret              = rknn_init(&ctx, (char*)model_path, 0, 0, NULL);
     if (ret < 0)
     {
-        printf("rknn_init fail! ret=%d\n", ret);
+        LOG_ERROR("rknn_init fail! ret=%d", ret);
         return -1;
     }
 
@@ -25,12 +26,12 @@ int init_yolo_model(const char* model_path, rknn_app_context_t* app_ctx)
 
     if (ret != RKNN_SUCC)
     {
-        printf("rknn query vision failed \n");
+        LOG_ERROR("rknn query vision failed");
         return -1;
     }
-    printf("sdk api version: %s driver version: %s",
-           version.api_version,
-           version.drv_version);
+    LOG_INFO("sdk api version: %s driver version: %s",
+             version.api_version,
+             version.drv_version);
 
     // Get Model Input Output Number
     rknn_input_output_num io_num;
@@ -40,12 +41,12 @@ int init_yolo_model(const char* model_path, rknn_app_context_t* app_ctx)
         printf("rknn_query fail! ret=%d\n", ret);
         return -1;
     }
-    printf("model input num: %d, output num: %d\n",
-           io_num.n_input,
-           io_num.n_output);
+    LOG_INFO("model input num: %d, output num: %d",
+             io_num.n_input,
+             io_num.n_output);
 
     // Get Model Input Info
-    printf("input tensors:\n");
+    LOG_INFO("input tensors:");
     rknn_tensor_attr input_attrs[io_num.n_input];
     memset(input_attrs, 0, sizeof(input_attrs));
     for (int i = 0; i < io_num.n_input; i++)
@@ -57,14 +58,14 @@ int init_yolo_model(const char* model_path, rknn_app_context_t* app_ctx)
                          sizeof(rknn_tensor_attr));
         if (ret != RKNN_SUCC)
         {
-            printf("rknn_query fail! ret=%d\n", ret);
+            LOG_ERROR("rknn_query fail! ret=%d", ret);
             return -1;
         }
         dump_tensor_attr(&(input_attrs[i]));
     }
 
     // Get Model Output Info
-    printf("output tensors:\n");
+    LOG_INFO("output tensors:");
     rknn_tensor_attr output_attrs[io_num.n_output];
     memset(output_attrs, 0, sizeof(output_attrs));
     for (int i = 0; i < io_num.n_output; i++)
@@ -76,7 +77,7 @@ int init_yolo_model(const char* model_path, rknn_app_context_t* app_ctx)
                          sizeof(rknn_tensor_attr));
         if (ret != RKNN_SUCC)
         {
-            printf("rknn_query fail! ret=%d\n", ret);
+            LOG_ERROR("rknn_query fail! ret=%d", ret);
             return -1;
         }
         dump_tensor_attr(&(output_attrs[i]));
@@ -110,26 +111,26 @@ int init_yolo_model(const char* model_path, rknn_app_context_t* app_ctx)
 
     // detect number of classes from score tensor (index 1)
     app_ctx->obj_class_num = output_attrs[1].dims[1];
-    printf("model obj_class_num=%d\n", app_ctx->obj_class_num);
+    LOG_INFO("model obj_class_num=%d", app_ctx->obj_class_num);
 
     if (input_attrs[0].fmt == RKNN_TENSOR_NCHW)
     {
-        printf("model is NCHW input fmt\n");
+        LOG_INFO("model is NCHW input fmt");
         app_ctx->model_channel = input_attrs[0].dims[1];
         app_ctx->model_height  = input_attrs[0].dims[2];
         app_ctx->model_width   = input_attrs[0].dims[3];
     }
     else
     {
-        printf("model is NHWC input fmt\n");
+        LOG_INFO("model is NHWC input fmt");
         app_ctx->model_height  = input_attrs[0].dims[1];
         app_ctx->model_width   = input_attrs[0].dims[2];
         app_ctx->model_channel = input_attrs[0].dims[3];
     }
-    printf("model input height=%d, width=%d, channel=%d\n",
-           app_ctx->model_height,
-           app_ctx->model_width,
-           app_ctx->model_channel);
+    LOG_INFO("model input height=%d, width=%d, channel=%d",
+             app_ctx->model_height,
+             app_ctx->model_width,
+             app_ctx->model_channel);
 
     return 0;
 }
@@ -189,14 +190,14 @@ int inference_model(rknn_app_context_t*        app_ctx,
     dst_img.size      = get_image_size(&dst_img);
     dst_img.virt_addr = nullptr;
 
-    printf("img.height=%d, img.width=%d, img.format=%d\n",
-           img->height,
-           img->width,
-           img->format);
-    printf("dst_img.height=%d, dst_img.width=%d, dst_img.format=%d\n",
-           dst_img.height,
-           dst_img.width,
-           dst_img.format);
+    LOG_DEBUG("img.height=%d, img.width=%d, img.format=%d",
+              img->height,
+              img->width,
+              img->format);
+    LOG_DEBUG("dst_img.height=%d, dst_img.width=%d, dst_img.format=%d",
+              dst_img.height,
+              dst_img.width,
+              dst_img.format);
 
     if (img->height != dst_img.height || img->width != dst_img.width)
     {
@@ -206,7 +207,7 @@ int inference_model(rknn_app_context_t*        app_ctx,
             convert_image_with_letterbox(img, &dst_img, &letter_box, bg_color);
         if (ret < 0)
         {
-            printf("convert_image_with_letterbox fail! ret=%d\n", ret);
+            LOG_ERROR("convert_image_with_letterbox fail! ret=%d", ret);
             return -1;
         }
     }
@@ -226,16 +227,16 @@ int inference_model(rknn_app_context_t*        app_ctx,
     ret = rknn_inputs_set(app_ctx->rknn_ctx, app_ctx->io_num.n_input, inputs);
     if (ret < 0)
     {
-        printf("rknn_input_set fail! ret=%d\n", ret);
+        LOG_ERROR("rknn_input_set fail! ret=%d", ret);
         return -1;
     }
 
     // Run
-    printf("rknn_run\n");
+    LOG_INFO("rknn_run");
     ret = rknn_run(app_ctx->rknn_ctx, nullptr);
     if (ret < 0)
     {
-        printf("rknn_run fail! ret=%d\n", ret);
+        LOG_ERROR("rknn_run fail! ret=%d", ret);
         return -1;
     }
 
@@ -250,7 +251,7 @@ int inference_model(rknn_app_context_t*        app_ctx,
         app_ctx->rknn_ctx, app_ctx->io_num.n_output, outputs, NULL);
     if (ret < 0)
     {
-        printf("rknn_outputs_get fail! ret=%d\n", ret);
+        LOG_ERROR("rknn_outputs_get fail! ret=%d", ret);
         return ret;
     }
 
