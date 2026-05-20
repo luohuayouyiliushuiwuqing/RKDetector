@@ -16,7 +16,11 @@ enum log_level_t
 };
 
 #ifndef LOG_LEVEL
+#ifdef NDEBUG
 #define LOG_LEVEL LOG_LVL_INFO
+#else
+#define LOG_LEVEL LOG_LVL_DEBUG
+#endif
 #endif
 
 #ifndef LOG_COLOR
@@ -58,7 +62,7 @@ static inline const char* log_level_color(enum log_level_t level)
     case LOG_LVL_INFO:
         return "\033[1;32m"; /* bold green */
     case LOG_LVL_DEBUG:
-        return "\033[1;36m"; /* bold cyan */
+        return "\033[1;37m"; /* bold cyan */
     default:
         return "\033[0m";
     }
@@ -108,7 +112,12 @@ __attribute__((format(printf, 4, 5))) static inline void log_log(
     {
         fprintf(stderr, "[%s]", log_level_str(level));
     }
+#ifndef NDEBUG
     fprintf(stderr, " [%s:%d] ", filename, line);
+#else
+    (void)filename;
+    (void)line;
+#endif
 
     va_list args;
     va_start(args, fmt);

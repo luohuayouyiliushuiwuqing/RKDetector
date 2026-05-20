@@ -7,8 +7,6 @@
 #include <string.h>
 #include <cstdio>
 
-#define LABEL_NALE_TXT_PATH "./model/drone.txt"
-
 static char* labels[OBJ_NUMB_MAX_SIZE];
 static int   loaded_label_count = 0;
 
@@ -97,9 +95,12 @@ static int readLines(const char* fileName, char* lines[], int max_line)
 
 static int loadLabelName(const char* locationFilename, char* label[])
 {
-    LOG_INFO("load label %s", locationFilename);
     loaded_label_count = readLines(locationFilename, label, OBJ_NUMB_MAX_SIZE);
-    return 0;
+    if (loaded_label_count < 0)
+    {
+        return -1;
+    }
+    return loaded_label_count;
 }
 
 int clamp(float val, int min, int max)
@@ -246,13 +247,13 @@ void compute_dfl(float* tensor, int dfl_len, float* box)
     }
 }
 
-int init_post_process()
+int init_post_process(const char* locationFilename)
 {
     int ret = 0;
-    ret     = loadLabelName(LABEL_NALE_TXT_PATH, labels);
+    ret     = loadLabelName(locationFilename, labels);
     if (ret < 0)
     {
-        LOG_ERROR("Load %s failed!", LABEL_NALE_TXT_PATH);
+        LOG_ERROR("Load %s failed!", locationFilename);
         return -1;
     }
     return 0;

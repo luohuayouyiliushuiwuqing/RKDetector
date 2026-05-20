@@ -51,8 +51,8 @@ TARGET_SDK="rknn_demo"
 
 TARGET_PLATFORM=linux
 ROOT_PWD=$( cd "$( dirname $0 )" && cd -P "$( dirname "$SOURCE" )" && pwd )
-INSTALL_DIR=${ROOT_PWD}/install/${TARGET_PLATFORM}/${TARGET_SDK}
-BUILD_DIR=${ROOT_PWD}/build/build_${TARGET_SDK}_${TARGET_PLATFORM}_${BUILD_TYPE}
+INSTALL_DIR=${ROOT_PWD}/install
+BUILD_DIR=${ROOT_PWD}/build
 
 echo "==================================="
 echo "BUILD_DEMO_NAME=${BUILD_DEMO_NAME}"
@@ -74,7 +74,7 @@ if [[ -d "${INSTALL_DIR}" ]]; then
 fi
 
 cd ${BUILD_DIR}
-cmake ../../${BUILD_DEMO_PATH} \
+cmake ../${BUILD_DEMO_PATH} \
     -DCMAKE_SYSTEM_NAME=Linux \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
     -DDISABLE_RGA=${DISABLE_RGA} \
@@ -96,4 +96,4 @@ else
     echo -e "\e[91mInstall directory \"$INSTALL_DIR\" does not exist, please check!\e[0m"
 fi
 
-scp  -r "$INSTALL_DIR"              182:/opt/install
+scp  -r "$INSTALL_DIR"              182:/opt

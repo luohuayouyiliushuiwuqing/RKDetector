@@ -21,7 +21,9 @@ int main(int argc, char** argv)
     rknn_app_context_t rknn_app_ctx;
     memset(&rknn_app_ctx, 0, sizeof(rknn_app_context_t));
 
-    init_post_process();
+    std::string file_path = "./model/drone.txt";
+
+    init_post_process(file_path.c_str());
 
     ret = init_yolo_model(model_path, &rknn_app_ctx);
     if (ret != 0)

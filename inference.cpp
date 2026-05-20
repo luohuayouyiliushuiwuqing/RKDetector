@@ -41,12 +41,12 @@ int init_yolo_model(const char* model_path, rknn_app_context_t* app_ctx)
         printf("rknn_query fail! ret=%d\n", ret);
         return -1;
     }
-    LOG_INFO("model input num: %d, output num: %d",
+    LOG_DEBUG("model input num: %d, output num: %d",
              io_num.n_input,
              io_num.n_output);
 
     // Get Model Input Info
-    LOG_INFO("input tensors:");
+    LOG_DEBUG("input tensors:");
     rknn_tensor_attr input_attrs[io_num.n_input];
     memset(input_attrs, 0, sizeof(input_attrs));
     for (int i = 0; i < io_num.n_input; i++)
@@ -65,7 +65,7 @@ int init_yolo_model(const char* model_path, rknn_app_context_t* app_ctx)
     }
 
     // Get Model Output Info
-    LOG_INFO("output tensors:");
+    LOG_DEBUG("output tensors:");
     rknn_tensor_attr output_attrs[io_num.n_output];
     memset(output_attrs, 0, sizeof(output_attrs));
     for (int i = 0; i < io_num.n_output; i++)
@@ -111,23 +111,23 @@ int init_yolo_model(const char* model_path, rknn_app_context_t* app_ctx)
 
     // detect number of classes from score tensor (index 1)
     app_ctx->obj_class_num = output_attrs[1].dims[1];
-    LOG_INFO("model obj_class_num=%d", app_ctx->obj_class_num);
+    LOG_DEBUG("model obj_class_num=%d", app_ctx->obj_class_num);
 
     if (input_attrs[0].fmt == RKNN_TENSOR_NCHW)
     {
-        LOG_INFO("model is NCHW input fmt");
+        LOG_DEBUG("model is NCHW input fmt");
         app_ctx->model_channel = input_attrs[0].dims[1];
         app_ctx->model_height  = input_attrs[0].dims[2];
         app_ctx->model_width   = input_attrs[0].dims[3];
     }
     else
     {
-        LOG_INFO("model is NHWC input fmt");
+        LOG_DEBUG("model is NHWC input fmt");
         app_ctx->model_height  = input_attrs[0].dims[1];
         app_ctx->model_width   = input_attrs[0].dims[2];
         app_ctx->model_channel = input_attrs[0].dims[3];
     }
-    LOG_INFO("model input height=%d, width=%d, channel=%d",
+    LOG_DEBUG("model input height=%d, width=%d, channel=%d",
              app_ctx->model_height,
              app_ctx->model_width,
              app_ctx->model_channel);
@@ -232,7 +232,7 @@ int inference_model(rknn_app_context_t*        app_ctx,
     }
 
     // Run
-    LOG_INFO("rknn_run");
+    LOG_DEBUG("rknn_run");
     ret = rknn_run(app_ctx->rknn_ctx, nullptr);
     if (ret < 0)
     {
