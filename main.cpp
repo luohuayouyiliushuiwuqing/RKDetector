@@ -1,6 +1,5 @@
 #include "RKDetector.h"
 #include "FrameBuffer.h"
-#include "postprocess_common.h"
 #include "log.h"
 
 #include <atomic>
@@ -44,14 +43,15 @@ static void camera_thread_func(FrameBuffer<cv::Mat>* fb,
 }
 
 static void draw_results(cv::Mat&                       bgr_img,
-                          const object_detect_result_list* results)
+                          const object_detect_result_list* results,
+                          const RKDetector&                detector)
 {
     char text[256];
     for (int i = 0; i < results->count; i++)
     {
         const object_detect_result* det = &(results->results[i]);
         LOG_INFO("%s @ (%d %d %d %d) %.3f",
-                 coco_cls_to_name(det->cls_id),
+                 detector.cls_to_name(det->cls_id),
                  det->box.left,
                  det->box.top,
                  det->box.right,
@@ -66,7 +66,7 @@ static void draw_results(cv::Mat&                       bgr_img,
 
         sprintf(text,
                 "%s %.1f%%",
-                coco_cls_to_name(det->cls_id),
+                detector.cls_to_name(det->cls_id),
                 det->prop * 100);
         cv::putText(bgr_img,
                     text,
@@ -98,7 +98,7 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    // Camera thread → FrameBuffer
+    // Camera thread -> FrameBuffer
     FrameBuffer<cv::Mat> frame_buf;
     std::thread          camera_thread(
         camera_thread_func, &frame_buf, image_path);
@@ -114,7 +114,7 @@ int main(int argc, char** argv)
             continue;
         }
 
-        // BGR → RGB for inference
+        // BGR -> RGB for inference
         cv::Mat rgb;
         cv::cvtColor(frame, rgb, cv::COLOR_BGR2RGB);
         image_buffer_t img = mat_to_buffer(rgb);
@@ -131,7 +131,7 @@ int main(int argc, char** argv)
         }
 
         // Draw results on original BGR frame
-        draw_results(frame, &results);
+        draw_results(frame, &results, detector);
         cv::imwrite("out.png", frame);
         LOG_INFO("saved out.png");
 

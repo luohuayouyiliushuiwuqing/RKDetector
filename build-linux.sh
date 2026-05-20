@@ -5,10 +5,13 @@ set -e
 BUILD_TYPE=Debug
 
 echo "$0 $@"
-while getopts ":b:m:r" opt; do
+while getopts ":b:d:m:r" opt; do
   case $opt in
     b)
       BUILD_TYPE=$OPTARG
+      ;;
+    d)
+      BUILD_DEMO_PATH=$OPTARG
       ;;
     r)
       DISABLE_RGA=ON
@@ -53,8 +56,6 @@ INSTALL_DIR=${ROOT_PWD}/install
 BUILD_DIR=${ROOT_PWD}/build
 
 echo "==================================="
-echo "BUILD_DEMO_NAME=${BUILD_DEMO_NAME}"
-echo "BUILD_DEMO_PATH=${BUILD_DEMO_PATH}"
 echo "BUILD_TYPE=${BUILD_TYPE}"
 echo "DISABLE_RGA=${DISABLE_RGA}"
 echo "INSTALL_DIR=${INSTALL_DIR}"
@@ -72,7 +73,7 @@ if [[ -d "${INSTALL_DIR}" ]]; then
 fi
 
 cd ${BUILD_DIR}
-cmake ../${BUILD_DEMO_PATH} \
+cmake .. \
     -DCMAKE_SYSTEM_NAME=Linux \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
     -DDISABLE_RGA=${DISABLE_RGA} \

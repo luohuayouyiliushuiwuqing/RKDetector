@@ -1,8 +1,6 @@
 #include "RKDetector.h"
-#include "postprocess_common.h"
 #include "image_utils.h"
 #include "log.h"
-#include "psotprocess.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +14,7 @@ int RKDetector::init(const char* model_path, const char* label_path)
         return -1;
     }
 
-    ret = init_post_process(label_path);
+    ret = npu_.init_post_process(label_path);
     if (ret != 0)
     {
         LOG_ERROR("init_post_process fail! ret=%d", ret);
@@ -30,7 +28,6 @@ int RKDetector::init(const char* model_path, const char* label_path)
 void RKDetector::release()
 {
     npu_.release();
-    deinit_post_process();
 }
 
 int RKDetector::detect(const image_buffer_t*        img,
@@ -120,19 +117,9 @@ int RKDetector::detect(const image_buffer_t*        img,
         return -1;
     }
 
-    // Post Process
-    // Build a temporary rknn_app_context_t for post_process
-    rknn_app_context_t tmp_ctx;
-    tmp_ctx.input_attrs  = npu_.input_attrs();
-    tmp_ctx.output_attrs = npu_.output_attrs();
-    tmp_ctx.io_num       = {(uint32_t)npu_.n_input(), (uint32_t)npu_.n_output()};
-    tmp_ctx.is_quant     = npu_.is_quant();
-    tmp_ctx.model_width  = npu_.model_width();
-    tmp_ctx.model_height = npu_.model_height();
-    tmp_ctx.obj_class_num = npu_.obj_class_num();
-
-    post_process(&tmp_ctx, outputs, &letter_box,
-                 box_conf_threshold, nms_threshold, results);
+    // Post Process (v8/v26 auto-detected in NPUScheduler::init)
+    npu_.post_process(
+        outputs, &letter_box, box_conf_threshold, nms_threshold, results);
 
     npu_.releaseOutputs(outputs, npu_.n_output());
 
@@ -142,4 +129,9 @@ int RKDetector::detect(const image_buffer_t*        img,
     }
 
     return 0;
+}
+
+char* RKDetector::cls_to_name(int cls_id) const
+{
+    return npu_.cls_to_name(cls_id);
 }
