@@ -2,6 +2,8 @@
 
 set -e
 
+BUILD_TYPE=Debug
+
 echo "$0 $@"
 while getopts ":b:m:r" opt; do
   case $opt in
@@ -22,7 +24,6 @@ while getopts ":b:m:r" opt; do
 done
 
 GCC_COMPILER=aarch64-linux-gnu
-BUILD_TYPE=Debug
 
 echo "$GCC_COMPILER"
 export CC=${GCC_COMPILER}-gcc
@@ -47,9 +48,6 @@ fi
 
 rm -rf build
 
-TARGET_SDK="rknn_demo"
-
-TARGET_PLATFORM=linux
 ROOT_PWD=$( cd "$( dirname $0 )" && cd -P "$( dirname "$SOURCE" )" && pwd )
 INSTALL_DIR=${ROOT_PWD}/install
 BUILD_DIR=${ROOT_PWD}/build
@@ -81,19 +79,5 @@ cmake ../${BUILD_DEMO_PATH} \
     -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 make -j4
 make install
-
-# Check if there is a rknn model in the install directory
-suffix=".rknn"
-shopt -s nullglob
-if [ -d "$INSTALL_DIR" ]; then
-    files=("$INSTALL_DIR/model/"/*"$suffix")
-    shopt -u nullglob
-
-    if [ ${#files[@]} -le 0 ]; then
-        echo -e "\e[91mThe RKNN model can not be found in \"$INSTALL_DIR/model\", please check!\e[0m"
-    fi
-else
-    echo -e "\e[91mInstall directory \"$INSTALL_DIR\" does not exist, please check!\e[0m"
-fi
 
 scp  -r "$INSTALL_DIR"              182:/opt
