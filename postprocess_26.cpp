@@ -1,7 +1,6 @@
+#include "image_utils.h"
 #include "postprocess_common.h"
 
-#include <math.h>
-#include <set>
 #include <stdlib.h>
 #include <string.h>
 

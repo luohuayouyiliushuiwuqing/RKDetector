@@ -2,7 +2,6 @@
 #define _RKNN_POSTPROCESS_COMMON_H_
 
 #include "RkType.h"
-#include "image_utils.h"
 
 #include <vector>
 
@@ -11,14 +10,6 @@ void   dump_tensor_attr(rknn_tensor_attr* attr);
 int    init_post_process(const char* locationFilename);
 void   deinit_post_process();
 char*  coco_cls_to_name(int cls_id);
-
-// Implemented by model-specific postprocess (v8 or 26)
-int    post_process(rknn_app_context_t*        app_ctx,
-                    void*                      outputs,
-                    letterbox_t*               letter_box,
-                    float                      conf_threshold,
-                    float                      nms_threshold,
-                    object_detect_result_list* od_results);
 
 // Shared utilities used by model-specific postprocess
 int    clamp(float val, int min, int max);

@@ -1,10 +1,82 @@
-#include "inference.h"
+#include "RKDetector.h"
+#include "FrameBuffer.h"
+#include "postprocess_common.h"
 #include "log.h"
 
-#include <stdio.h>
-#include <string.h>
+#include <atomic>
+#include <thread>
+#include <chrono>
 
 #include <opencv2/opencv.hpp>
+
+static std::atomic<bool> g_running{true};
+
+static image_buffer_t mat_to_buffer(const cv::Mat& mat)
+{
+    image_buffer_t buf;
+    memset(&buf, 0, sizeof(buf));
+    buf.width     = mat.cols;
+    buf.height    = mat.rows;
+    buf.format    = IMAGE_FORMAT_RGB888;
+    buf.virt_addr = mat.data;
+    buf.size      = (int)(mat.total() * mat.elemSize());
+    return buf;
+}
+
+static void camera_thread_func(FrameBuffer<cv::Mat>* fb,
+                                const char*            image_path)
+{
+    cv::Mat img = cv::imread(image_path, cv::IMREAD_COLOR);
+    if (img.empty())
+    {
+        LOG_ERROR("camera: read image fail! path=%s", image_path);
+        g_running = false;
+        return;
+    }
+    LOG_INFO("camera: loaded %s (%dx%d)", image_path, img.cols, img.rows);
+
+    while (g_running)
+    {
+        fb->push(img);
+        std::this_thread::sleep_for(std::chrono::milliseconds(33));
+    }
+    LOG_INFO("camera: thread exit");
+}
+
+static void draw_results(cv::Mat&                       bgr_img,
+                          const object_detect_result_list* results)
+{
+    char text[256];
+    for (int i = 0; i < results->count; i++)
+    {
+        const object_detect_result* det = &(results->results[i]);
+        LOG_INFO("%s @ (%d %d %d %d) %.3f",
+                 coco_cls_to_name(det->cls_id),
+                 det->box.left,
+                 det->box.top,
+                 det->box.right,
+                 det->box.bottom,
+                 det->prop);
+
+        cv::rectangle(bgr_img,
+                      cv::Point(det->box.left, det->box.top),
+                      cv::Point(det->box.right, det->box.bottom),
+                      cv::Scalar(255, 0, 0),
+                      3);
+
+        sprintf(text,
+                "%s %.1f%%",
+                coco_cls_to_name(det->cls_id),
+                det->prop * 100);
+        cv::putText(bgr_img,
+                    text,
+                    cv::Point(det->box.left, det->box.top - 5),
+                    cv::FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    cv::Scalar(0, 0, 255),
+                    1);
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -14,103 +86,64 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    const char*        model_path = argv[1];
-    const char*        image_path = argv[2];
+    const char* model_path = argv[1];
+    const char* image_path = argv[2];
 
-    int                ret;
-    rknn_app_context_t rknn_app_ctx;
-    memset(&rknn_app_ctx, 0, sizeof(rknn_app_context_t));
-
-    std::string file_path = "./model/drone.txt";
-
-    init_post_process(file_path.c_str());
-
-    ret = init_yolo_model(model_path, &rknn_app_ctx);
+    // Init detector
+    RKDetector detector;
+    int        ret = detector.init(model_path, "./model/drone.txt");
     if (ret != 0)
     {
-        LOG_ERROR("init model fail! ret=%d model_path=%s", ret, model_path);
-        deinit_post_process();
+        LOG_ERROR("detector init fail! ret=%d", ret);
         return -1;
     }
 
-    cv::Mat bgr_img = cv::imread(image_path, cv::IMREAD_COLOR);
-    if (bgr_img.empty())
+    // Camera thread → FrameBuffer
+    FrameBuffer<cv::Mat> frame_buf;
+    std::thread          camera_thread(
+        camera_thread_func, &frame_buf, image_path);
+
+    // Inference loop
+    int frame_count = 0;
+    while (g_running)
     {
-        LOG_ERROR("read image fail! image_path=%s", image_path);
-        release_yolo_model(&rknn_app_ctx);
-        deinit_post_process();
-        return -1;
+        cv::Mat frame;
+        if (!frame_buf.pop(frame))
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            continue;
+        }
+
+        // BGR → RGB for inference
+        cv::Mat rgb;
+        cv::cvtColor(frame, rgb, cv::COLOR_BGR2RGB);
+        image_buffer_t img = mat_to_buffer(rgb);
+
+        auto t1 = getTimeStamp();
+        object_detect_result_list results;
+        ret = detector.detect(&img, &results);
+        LOG_INFO("detect cost %f ms", (getTimeStamp() - t1) * 1e-3);
+
+        if (ret != 0)
+        {
+            LOG_ERROR("detect fail! ret=%d", ret);
+            continue;
+        }
+
+        // Draw results on original BGR frame
+        draw_results(frame, &results);
+        cv::imwrite("out.png", frame);
+        LOG_INFO("saved out.png");
+
+        frame_count++;
+        if (frame_count >= 1)
+        {
+            g_running = false;
+        }
     }
 
-    // Convert BGR to RGB for inference
-    cv::Mat rgb_img;
-    cv::cvtColor(bgr_img, rgb_img, cv::COLOR_BGR2RGB);
-
-    // Fill image_buffer_t from cv::Mat
-    image_buffer_t src_image;
-    memset(&src_image, 0, sizeof(image_buffer_t));
-    src_image.width     = rgb_img.cols;
-    src_image.height    = rgb_img.rows;
-    src_image.format    = IMAGE_FORMAT_RGB888;
-    src_image.virt_addr = rgb_img.data;
-    src_image.size      = rgb_img.total() * rgb_img.elemSize();
-
-    object_detect_result_list od_results;
-
-    auto                      t1 = getTimeStamp();
-    ret = inference_model(&rknn_app_ctx, &src_image, &od_results);
-    LOG_INFO("inference_model cost %f ms", (getTimeStamp() - t1) * 1e-3);
-    if (ret != 0)
-    {
-        LOG_ERROR("inference model fail! ret=%d", ret);
-        release_yolo_model(&rknn_app_ctx);
-        deinit_post_process();
-        return -1;
-    }
-
-    // Draw results with OpenCV
-    char text[256];
-    for (int i = 0; i < od_results.count; i++)
-    {
-        object_detect_result* det_result = &(od_results.results[i]);
-        LOG_INFO("%s @ (%d %d %d %d) %.3f",
-                 coco_cls_to_name(det_result->cls_id),
-                 det_result->box.left,
-                 det_result->box.top,
-                 det_result->box.right,
-                 det_result->box.bottom,
-                 det_result->prop);
-
-        int x1 = det_result->box.left;
-        int y1 = det_result->box.top;
-        int x2 = det_result->box.right;
-        int y2 = det_result->box.bottom;
-
-        // Draw bounding box (blue)
-        cv::rectangle(bgr_img,
-                      cv::Point(x1, y1),
-                      cv::Point(x2, y2),
-                      cv::Scalar(255, 0, 0),
-                      3);
-
-        // Draw label text (red)
-        sprintf(text,
-                "%s %.1f%%",
-                coco_cls_to_name(det_result->cls_id),
-                det_result->prop * 100);
-        cv::putText(bgr_img,
-                    text,
-                    cv::Point(x1, y1 - 5),
-                    cv::FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    cv::Scalar(0, 0, 255),
-                    1);
-    }
-
-    cv::imwrite("out.png", bgr_img);
-
-    release_yolo_model(&rknn_app_ctx);
-    deinit_post_process();
+    camera_thread.join();
+    detector.release();
 
     return 0;
 }

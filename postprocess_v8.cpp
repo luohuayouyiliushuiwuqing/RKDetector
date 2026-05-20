@@ -1,5 +1,5 @@
+#include "image_utils.h"
 #include "postprocess_common.h"
-
 #include <stdlib.h>
 #include <string.h>
 

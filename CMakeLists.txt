@@ -13,7 +13,8 @@ find_package(Threads REQUIRED)
 # Common sources shared between v8 and 26
 set(COMMON_SRCS
         main.cpp
-        inference.cpp
+        NPUScheduler.cpp
+        RKDetector.cpp
         postprocess_common.cpp
 )
 
@@ -29,6 +30,7 @@ set(UTILS_LIBS
 include_directories(
         ${LIBRKNNRT_INCLUDES}
         ${LIBOPENCV_INCLUDES}
+        ${CMAKE_SOURCE_DIR}
 )
 
 
