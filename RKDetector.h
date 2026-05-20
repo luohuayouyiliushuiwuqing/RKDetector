@@ -8,7 +8,7 @@
 class RKDetector
 {
 public:
-    int  init(const char* model_path);
+    int  init(const char* model_path, rknn_core_mask core_mask = RKNN_NPU_CORE_ALL);
     void release();
     int  detect(const image_buffer_t*      img,
                 object_detect_result_list* results,

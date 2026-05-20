@@ -1,4 +1,4 @@
-#include "RKDetector.h"
+#include "NPUDevicePool.h"
 #include "FrameBuffer.h"
 #include "LabelTools.h"
 #include "log.h"
@@ -89,17 +89,21 @@ int main(int argc, char** argv)
     const char* model_path = argv[1];
     const char* image_path = argv[2];
 
-    // Init detector
-    RKDetector  detector;
-    int         ret = detector.init(model_path);
-
-    LabelTools  label_tools("./model/drone.txt");
-
+    // Init detector pool (one per NPU core)
+    const rknn_core_mask cores[] = {
+        RKNN_NPU_CORE_0,
+        RKNN_NPU_CORE_1,
+        RKNN_NPU_CORE_2,
+    };
+    NPUDevicePool<3> pool;
+    int              ret = pool.init(model_path, cores);
     if (ret != 0)
     {
-        LOG_ERROR("detector init fail! ret=%d", ret);
+        LOG_ERROR("pool init fail! ret=%d", ret);
         return -1;
     }
+
+    LabelTools label_tools("./model/drone.txt");
 
     // Camera thread -> FrameBuffer
     FrameBuffer<cv::Mat> frame_buf;
@@ -122,9 +126,11 @@ int main(int argc, char** argv)
         image_buffer_t            img = mat_to_buffer(rgb);
 
         auto                      t1  = getTimeStamp();
+        int                       dev = pool.acquire();
         object_detect_result_list results;
-        ret = detector.detect(&img, &results, 0.45, 0.45);
-        LOG_INFO("detect cost %f ms", (getTimeStamp() - t1) * 1e-3);
+        ret = pool.detector(dev).detect(&img, &results, 0.45, 0.45);
+        pool.release_detector(dev);
+        LOG_INFO("detect cost %f ms (core %d)", (getTimeStamp() - t1) * 1e-3, dev);
 
         if (ret != 0)
         {
@@ -138,14 +144,14 @@ int main(int argc, char** argv)
         LOG_INFO("saved out.png");
 
         frame_count++;
-        if (frame_count >= 1)
+        if (frame_count >= 20)
         {
             g_running = false;
         }
     }
 
     camera_thread.join();
-    detector.release();
+    pool.release();
     label_tools.release();
 
     return 0;

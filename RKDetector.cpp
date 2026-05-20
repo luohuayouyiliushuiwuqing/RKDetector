@@ -5,9 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-int RKDetector::init(const char* model_path)
+int RKDetector::init(const char* model_path, rknn_core_mask core_mask)
 {
-    int ret = npu_.init(model_path, RKNN_NPU_CORE_ALL);
+    int ret = npu_.init(model_path, core_mask);
     if (ret != 0)
     {
         LOG_ERROR("npu init fail! ret=%d", ret);
