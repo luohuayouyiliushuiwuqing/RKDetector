@@ -10,8 +10,10 @@ class RKDetector
 public:
     int   init(const char* model_path, const char* label_path);
     void  release();
-    int   detect(const image_buffer_t*        img,
-                 object_detect_result_list* results);
+    int   detect(const image_buffer_t*      img,
+                 object_detect_result_list* results,
+                 float                      conf_threshold,
+                 float                      nms_threshold);
     char* cls_to_name(int cls_id) const;
 
 private:

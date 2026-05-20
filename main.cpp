@@ -10,7 +10,7 @@
 
 static std::atomic<bool> g_running{true};
 
-static image_buffer_t mat_to_buffer(const cv::Mat& mat)
+static image_buffer_t    mat_to_buffer(const cv::Mat& mat)
 {
     image_buffer_t buf;
     memset(&buf, 0, sizeof(buf));
@@ -22,8 +22,7 @@ static image_buffer_t mat_to_buffer(const cv::Mat& mat)
     return buf;
 }
 
-static void camera_thread_func(FrameBuffer<cv::Mat>* fb,
-                                const char*            image_path)
+static void camera_thread_func(FrameBuffer<cv::Mat>* fb, const char* image_path)
 {
     cv::Mat img = cv::imread(image_path, cv::IMREAD_COLOR);
     if (img.empty())
@@ -42,9 +41,9 @@ static void camera_thread_func(FrameBuffer<cv::Mat>* fb,
     LOG_INFO("camera: thread exit");
 }
 
-static void draw_results(cv::Mat&                       bgr_img,
-                          const object_detect_result_list* results,
-                          const RKDetector&                detector)
+static void draw_results(cv::Mat&                         bgr_img,
+                         const object_detect_result_list* results,
+                         const RKDetector&                detector)
 {
     char text[256];
     for (int i = 0; i < results->count; i++)
@@ -90,8 +89,8 @@ int main(int argc, char** argv)
     const char* image_path = argv[2];
 
     // Init detector
-    RKDetector detector;
-    int        ret = detector.init(model_path, "./model/drone.txt");
+    RKDetector  detector;
+    int         ret = detector.init(model_path, "./model/drone.txt");
     if (ret != 0)
     {
         LOG_ERROR("detector init fail! ret=%d", ret);
@@ -100,11 +99,10 @@ int main(int argc, char** argv)
 
     // Camera thread -> FrameBuffer
     FrameBuffer<cv::Mat> frame_buf;
-    std::thread          camera_thread(
-        camera_thread_func, &frame_buf, image_path);
+    std::thread camera_thread(camera_thread_func, &frame_buf, image_path);
 
     // Inference loop
-    int frame_count = 0;
+    int         frame_count = 0;
     while (g_running)
     {
         cv::Mat frame;
@@ -117,11 +115,11 @@ int main(int argc, char** argv)
         // BGR -> RGB for inference
         cv::Mat rgb;
         cv::cvtColor(frame, rgb, cv::COLOR_BGR2RGB);
-        image_buffer_t img = mat_to_buffer(rgb);
+        image_buffer_t            img = mat_to_buffer(rgb);
 
-        auto t1 = getTimeStamp();
+        auto                      t1  = getTimeStamp();
         object_detect_result_list results;
-        ret = detector.detect(&img, &results);
+        ret = detector.detect(&img, &results, 0.45, 0.45);
         LOG_INFO("detect cost %f ms", (getTimeStamp() - t1) * 1e-3);
 
         if (ret != 0)

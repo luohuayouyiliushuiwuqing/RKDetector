@@ -30,17 +30,16 @@ void RKDetector::release()
     npu_.release();
 }
 
-int RKDetector::detect(const image_buffer_t*        img,
-                       object_detect_result_list* results)
+int RKDetector::detect(const image_buffer_t*      img,
+                       object_detect_result_list* results,
+                       float                      conf_threshold,
+                       float                      nms_threshold)
 {
     int            ret;
     image_buffer_t dst_img;
     letterbox_t    letter_box;
     rknn_input     inputs[npu_.n_input()];
     rknn_output    outputs[npu_.n_output()];
-    const float    nms_threshold      = NMS_THRESH;
-    const float    box_conf_threshold = BOX_THRESH;
-    int            bg_color           = 114;
 
     if ((!img) || (!results))
     {
@@ -53,9 +52,9 @@ int RKDetector::detect(const image_buffer_t*        img,
     memset(inputs, 0, sizeof(inputs));
     memset(outputs, 0, sizeof(outputs));
 
-    letter_box.scale = 1;
-    letter_box.x_pad = 0;
-    letter_box.y_pad = 0;
+    letter_box.scale  = 1;
+    letter_box.x_pad  = 0;
+    letter_box.y_pad  = 0;
 
     // Pre Process
     dst_img.width     = npu_.model_width();
@@ -78,8 +77,8 @@ int RKDetector::detect(const image_buffer_t*        img,
     {
         dst_img.virt_addr = static_cast<unsigned char*>(malloc(dst_img.size));
         need_free_dst     = 1;
-        ret = convert_image_with_letterbox(
-            (image_buffer_t*)img, &dst_img, &letter_box, bg_color);
+        ret               = convert_image_with_letterbox(
+            const_cast<image_buffer_t*>(img), &dst_img, &letter_box, 114);
         if (ret < 0)
         {
             LOG_ERROR("convert_image_with_letterbox fail! ret=%d", ret);
@@ -96,8 +95,8 @@ int RKDetector::detect(const image_buffer_t*        img,
     inputs[0].index = 0;
     inputs[0].type  = RKNN_TENSOR_UINT8;
     inputs[0].fmt   = RKNN_TENSOR_NHWC;
-    inputs[0].size  = npu_.model_width() * npu_.model_height() *
-                     npu_.model_channel();
+    inputs[0].size =
+        npu_.model_width() * npu_.model_height() * npu_.model_channel();
     inputs[0].buf = dst_img.virt_addr;
 
     // Run NPU
@@ -113,13 +112,14 @@ int RKDetector::detect(const image_buffer_t*        img,
     {
         LOG_ERROR("npu infer fail! ret=%d", ret);
         if (need_free_dst)
+        {
             free(dst_img.virt_addr);
+        }
         return -1;
     }
 
-    // Post Process (v8/v26 auto-detected in NPUScheduler::init)
     npu_.post_process(
-        outputs, &letter_box, box_conf_threshold, nms_threshold, results);
+        outputs, &letter_box, conf_threshold, nms_threshold, results);
 
     npu_.releaseOutputs(outputs, npu_.n_output());
 
