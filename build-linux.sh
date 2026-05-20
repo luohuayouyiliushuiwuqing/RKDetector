@@ -3,17 +3,10 @@
 set -e
 
 echo "$0 $@"
-while getopts ":d:b:m:r" opt; do
+while getopts ":b:m:r" opt; do
   case $opt in
     b)
       BUILD_TYPE=$OPTARG
-      ;;
-    m)
-      ENABLE_ASAN=ON
-      export ENABLE_ASAN=TRUE
-      ;;
-    d)
-      BUILD_DEMO_NAME=$OPTARG
       ;;
     r)
       DISABLE_RGA=ON
@@ -27,18 +20,6 @@ while getopts ":d:b:m:r" opt; do
       ;;
   esac
 done
-
-if [ -z ${BUILD_DEMO_NAME} ]; then
-  echo "$0 -d <build_demo_name> [-b <build_type>] [-m] [-r]"
-  echo ""
-  echo "    -d : demo name"
-  echo "    -b : build_type(Debug/Release)"
-  echo "    -m : enable address sanitizer, build_type need set to Debug"
-  echo "    -r : disable rga, use cpu resize image"
-  echo "such as: $0 -d yolov8"
-  echo ""
-  exit -1
-fi
 
 GCC_COMPILER=aarch64-linux-gnu
 BUILD_TYPE=Debug
@@ -60,43 +41,13 @@ if [[ -z ${BUILD_TYPE} ]];then
     BUILD_TYPE=Release
 fi
 
-# Build with Address Sanitizer for memory check, BUILD_TYPE need set to Debug
-if [[ -z ${ENABLE_ASAN} ]];then
-    ENABLE_ASAN=OFF
-fi
-
 if [[ -z ${DISABLE_RGA} ]];then
     DISABLE_RGA=OFF
 fi
 
-for demo_path in `find ./ -name ${BUILD_DEMO_NAME}`
-do
-    if [ -d "$demo_path" ]
-    then
-        BUILD_DEMO_PATH="$demo_path"
-        break;
-    fi
-done
-
-#if [[ -z "${BUILD_DEMO_PATH}" ]]
-#then
-#    echo "Cannot find demo: ${BUILD_DEMO_NAME}, only support:"
-#
-#    for demo_path in `find ./ -name cpp`
-#    do
-#        if [ -d "$demo_path" ]
-#        then
-#            dname=`dirname "$demo_path"`
-#            name=`basename $dname`
-#            echo "$name"
-#        fi
-#    done
-#    exit
-#fi
-
 rm -rf build
 
-TARGET_SDK="rknn_${BUILD_DEMO_NAME}_demo"
+TARGET_SDK="rknn_demo"
 
 TARGET_PLATFORM=linux
 ROOT_PWD=$( cd "$( dirname $0 )" && cd -P "$( dirname "$SOURCE" )" && pwd )
@@ -107,7 +58,6 @@ echo "==================================="
 echo "BUILD_DEMO_NAME=${BUILD_DEMO_NAME}"
 echo "BUILD_DEMO_PATH=${BUILD_DEMO_PATH}"
 echo "BUILD_TYPE=${BUILD_TYPE}"
-echo "ENABLE_ASAN=${ENABLE_ASAN}"
 echo "DISABLE_RGA=${DISABLE_RGA}"
 echo "INSTALL_DIR=${INSTALL_DIR}"
 echo "BUILD_DIR=${BUILD_DIR}"
@@ -127,7 +77,6 @@ cd ${BUILD_DIR}
 cmake ../../${BUILD_DEMO_PATH} \
     -DCMAKE_SYSTEM_NAME=Linux \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-    -DENABLE_ASAN=${ENABLE_ASAN} \
     -DDISABLE_RGA=${DISABLE_RGA} \
     -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 make -j4
