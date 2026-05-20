@@ -5,23 +5,14 @@
 #include <stdlib.h>
 #include <string.h>
 
-int RKDetector::init(const char* model_path, const char* label_path)
+int RKDetector::init(const char* model_path)
 {
-    int ret = npu_.init(model_path);
+    int ret = npu_.init(model_path, RKNN_NPU_CORE_ALL);
     if (ret != 0)
     {
         LOG_ERROR("npu init fail! ret=%d", ret);
         return -1;
     }
-
-    ret = npu_.init_post_process(label_path);
-    if (ret != 0)
-    {
-        LOG_ERROR("init_post_process fail! ret=%d", ret);
-        npu_.release();
-        return -1;
-    }
-
     return 0;
 }
 
@@ -63,18 +54,17 @@ int RKDetector::detect(const image_buffer_t*      img,
     dst_img.size      = get_image_size(&dst_img);
     dst_img.virt_addr = nullptr;
 
-    LOG_DEBUG("img.height=%d, img.width=%d, img.format=%d",
-              img->height,
-              img->width,
-              img->format);
-    LOG_DEBUG("dst_img.height=%d, dst_img.width=%d, dst_img.format=%d",
-              dst_img.height,
-              dst_img.width,
-              dst_img.format);
-
     int need_free_dst = 0;
     if (img->height != dst_img.height || img->width != dst_img.width)
     {
+        LOG_DEBUG("src_img.height=%d, src_img.width=%d, src_img.format=%d",
+                  img->height,
+                  img->width,
+                  img->format);
+        LOG_DEBUG("dst_img.height=%d, dst_img.width=%d, dst_img.format=%d",
+                  dst_img.height,
+                  dst_img.width,
+                  dst_img.format);
         dst_img.virt_addr = static_cast<unsigned char*>(malloc(dst_img.size));
         need_free_dst     = 1;
         ret               = convert_image_with_letterbox(
@@ -107,7 +97,7 @@ int RKDetector::detect(const image_buffer_t*      img,
         outputs[i].want_float = (!npu_.is_quant());
     }
 
-    ret = npu_.infer(inputs, npu_.n_input(), outputs, npu_.n_output());
+    ret = npu_.infer(inputs, outputs);
     if (ret < 0)
     {
         LOG_ERROR("npu infer fail! ret=%d", ret);
@@ -129,9 +119,4 @@ int RKDetector::detect(const image_buffer_t*      img,
     }
 
     return 0;
-}
-
-char* RKDetector::cls_to_name(int cls_id) const
-{
-    return npu_.cls_to_name(cls_id);
 }

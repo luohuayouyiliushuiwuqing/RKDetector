@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 
-project(rknn_demo)
+project(RKDetector)
 
 add_subdirectory(3rdparty 3rdparty.out)
 add_subdirectory(utils utils.out)
@@ -14,6 +14,7 @@ set(SRCS
         main.cpp
         NPUScheduler.cpp
         RKDetector.cpp
+        LabelTools.cpp
 )
 
 set(UTILS_LIBS

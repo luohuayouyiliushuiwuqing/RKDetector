@@ -16,20 +16,17 @@ enum class ModelType
 class NPUScheduler
 {
 public:
-    int  init(const char* model_path);
-    void release();
-    int
-    infer(rknn_input* inputs, int n_input, rknn_output* outputs, int n_output);
+    int               init(const char*    model_path,
+                           rknn_core_mask core_mask = RKNN_NPU_CORE_AUTO);
+    void              release();
+    int               infer(rknn_input* inputs, rknn_output* outputs);
     void              releaseOutputs(rknn_output* outputs, int n_output);
 
-    int               init_post_process(const char* label_path);
-    void              deinit_post_process();
     int               post_process(rknn_output*               outputs,
                                    const letterbox_t*         letter_box,
                                    float                      conf_threshold,
                                    float                      nms_threshold,
                                    object_detect_result_list* results);
-    char*             cls_to_name(int cls_id) const;
 
     int               model_width() const;
     int               model_height() const;
@@ -45,10 +42,6 @@ public:
 private:
     rknn_app_context_t ctx_{};
     ModelType          type_{ModelType::V8};
-
-    // label
-    char*              labels_[OBJ_NUMB_MAX_SIZE]{};
-    int                label_count_{};
 
     // postprocess helpers (return validCount)
     int                v8_process_i8(rknn_output*        outputs,

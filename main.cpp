@@ -1,5 +1,6 @@
 #include "RKDetector.h"
 #include "FrameBuffer.h"
+#include "LabelTools.h"
 #include "log.h"
 
 #include <atomic>
@@ -43,14 +44,14 @@ static void camera_thread_func(FrameBuffer<cv::Mat>* fb, const char* image_path)
 
 static void draw_results(cv::Mat&                         bgr_img,
                          const object_detect_result_list* results,
-                         const RKDetector&                detector)
+                         const LabelTools&                label_tools)
 {
     char text[256];
     for (int i = 0; i < results->count; i++)
     {
         const object_detect_result* det = &(results->results[i]);
         LOG_INFO("%s @ (%d %d %d %d) %.3f",
-                 detector.cls_to_name(det->cls_id),
+                 label_tools.get_name(det->cls_id),
                  det->box.left,
                  det->box.top,
                  det->box.right,
@@ -65,7 +66,7 @@ static void draw_results(cv::Mat&                         bgr_img,
 
         sprintf(text,
                 "%s %.1f%%",
-                detector.cls_to_name(det->cls_id),
+                label_tools.get_name(det->cls_id),
                 det->prop * 100);
         cv::putText(bgr_img,
                     text,
@@ -90,7 +91,10 @@ int main(int argc, char** argv)
 
     // Init detector
     RKDetector  detector;
-    int         ret = detector.init(model_path, "./model/drone.txt");
+    int         ret = detector.init(model_path);
+
+    LabelTools  label_tools("./model/drone.txt");
+
     if (ret != 0)
     {
         LOG_ERROR("detector init fail! ret=%d", ret);
@@ -129,7 +133,7 @@ int main(int argc, char** argv)
         }
 
         // Draw results on original BGR frame
-        draw_results(frame, &results, detector);
+        draw_results(frame, &results, label_tools);
         cv::imwrite("out.png", frame);
         LOG_INFO("saved out.png");
 
@@ -142,6 +146,7 @@ int main(int argc, char** argv)
 
     camera_thread.join();
     detector.release();
+    label_tools.release();
 
     return 0;
 }

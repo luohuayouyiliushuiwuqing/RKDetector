@@ -172,77 +172,10 @@ static int quick_sort_indice_inverse(std::vector<float>& input,
 }
 
 // ---------------------------------------------------------------------------
-// Label I/O helpers
-// ---------------------------------------------------------------------------
-
-static char* readLine(FILE* fp, char* buffer, int* len)
-{
-    int    ch;
-    int    i        = 0;
-    size_t buff_len = 0;
-
-    buffer          = (char*)malloc(buff_len + 1);
-    if (!buffer)
-    {
-        return NULL;
-    }
-
-    while ((ch = fgetc(fp)) != '\n' && ch != EOF)
-    {
-        buff_len++;
-        void* tmp = realloc(buffer, buff_len + 1);
-        if (tmp == NULL)
-        {
-            free(buffer);
-            return NULL;
-        }
-        buffer    = (char*)tmp;
-
-        buffer[i] = (char)ch;
-        i++;
-    }
-    buffer[i] = '\0';
-
-    *len      = buff_len;
-
-    if (ch == EOF && (i == 0 || ferror(fp)))
-    {
-        free(buffer);
-        return NULL;
-    }
-    return buffer;
-}
-
-static int readLines(const char* fileName, char* lines[], int max_line)
-{
-    FILE* file = fopen(fileName, "r");
-    char* s;
-    int   i = 0;
-    int   n = 0;
-
-    if (file == NULL)
-    {
-        LOG_ERROR("Open %s fail!", fileName);
-        return -1;
-    }
-
-    while ((s = readLine(file, s, &n)) != NULL)
-    {
-        lines[i++] = s;
-        if (i >= max_line)
-        {
-            break;
-        }
-    }
-    fclose(file);
-    return i;
-}
-
-// ---------------------------------------------------------------------------
 // NPUScheduler — init / release / infer
 // ---------------------------------------------------------------------------
 
-int NPUScheduler::init(const char* model_path)
+int NPUScheduler::init(const char* model_path, rknn_core_mask core_mask)
 {
     int          ret;
     rknn_context ctx = 0;
@@ -252,6 +185,12 @@ int NPUScheduler::init(const char* model_path)
     {
         LOG_ERROR("rknn_init fail! ret=%d", ret);
         return -1;
+    }
+
+    ret = rknn_set_core_mask(ctx, core_mask);
+    if (ret != RKNN_SUCC)
+    {
+        LOG_ERROR("rknn_set_core_mask fail! ret=%d", ret);
     }
 
     rknn_sdk_version version;
@@ -379,7 +318,6 @@ int NPUScheduler::init(const char* model_path)
 
 void NPUScheduler::release()
 {
-    deinit_post_process();
     if (ctx_.input_attrs != NULL)
     {
         free(ctx_.input_attrs);
@@ -397,17 +335,16 @@ void NPUScheduler::release()
     }
 }
 
-int NPUScheduler::infer(rknn_input*  inputs,
-                        int          n_input,
-                        rknn_output* outputs,
-                        int          n_output)
+int NPUScheduler::infer(rknn_input* inputs, rknn_output* outputs)
 {
-    int ret = rknn_inputs_set(ctx_.rknn_ctx, n_input, inputs);
+    auto t0  = getTimeStamp();
+    int  ret = rknn_inputs_set(ctx_.rknn_ctx, ctx_.io_num.n_input, inputs);
     if (ret < 0)
     {
         LOG_ERROR("rknn_inputs_set fail! ret=%d", ret);
         return -1;
     }
+    auto t1 = getTimeStamp();
 
     LOG_DEBUG("rknn_run");
     ret = rknn_run(ctx_.rknn_ctx, nullptr);
@@ -417,12 +354,23 @@ int NPUScheduler::infer(rknn_input*  inputs,
         return -1;
     }
 
-    ret = rknn_outputs_get(ctx_.rknn_ctx, n_output, outputs, NULL);
+    auto t2 = getTimeStamp();
+
+    ret =
+        rknn_outputs_get(ctx_.rknn_ctx, ctx_.io_num.n_output, outputs, nullptr);
     if (ret < 0)
     {
         LOG_ERROR("rknn_outputs_get fail! ret=%d", ret);
         return -1;
     }
+
+    auto t3 = getTimeStamp();
+
+    LOG_DEBUG("rknn_inputs_set: %.2f ms, rknn_run: %.2f ms, rknn_outputs_get: "
+              "%.2f ms",
+              (t1 - t0) / 1000.0,
+              (t2 - t1) / 1000.0,
+              (t3 - t2) / 1000.0);
 
     return 0;
 }
@@ -430,47 +378,6 @@ int NPUScheduler::infer(rknn_input*  inputs,
 void NPUScheduler::releaseOutputs(rknn_output* outputs, int n_output)
 {
     rknn_outputs_release(ctx_.rknn_ctx, n_output, outputs);
-}
-
-// ---------------------------------------------------------------------------
-// Label management
-// ---------------------------------------------------------------------------
-
-int NPUScheduler::init_post_process(const char* label_path)
-{
-    label_count_ = readLines(label_path, labels_, OBJ_NUMB_MAX_SIZE);
-    if (label_count_ < 0)
-    {
-        LOG_ERROR("Load %s failed!", label_path);
-        return -1;
-    }
-    return 0;
-}
-
-void NPUScheduler::deinit_post_process()
-{
-    for (int i = 0; i < label_count_; i++)
-    {
-        if (labels_[i] != nullptr)
-        {
-            free(labels_[i]);
-            labels_[i] = nullptr;
-        }
-    }
-    label_count_ = 0;
-}
-
-char* NPUScheduler::cls_to_name(int cls_id) const
-{
-    if (cls_id >= label_count_ || cls_id < 0)
-    {
-        return (char*)"null";
-    }
-    if (labels_[cls_id])
-    {
-        return labels_[cls_id];
-    }
-    return (char*)"null";
 }
 
 // ---------------------------------------------------------------------------
