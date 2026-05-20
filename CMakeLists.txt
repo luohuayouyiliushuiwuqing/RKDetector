@@ -53,7 +53,7 @@ target_link_libraries(rknn_yolo26_demo
 )
 
 
-install(TARGETS rknn_yolov8_demo rknn_yolo26_demo DESTINATION yolov8)
+install(TARGETS rknn_yolov8_demo rknn_yolo26_demo DESTINATION .)
 install(FILES model/drone.png DESTINATION model)
 install(FILES model/drone.txt DESTINATION model)
 file(GLOB RKNN_FILES "model/*.rknn")

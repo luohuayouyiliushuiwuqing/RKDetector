@@ -4,12 +4,33 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <cstdio>
 
 #define LABEL_NALE_TXT_PATH "./model/drone.txt"
 
 static char* labels[OBJ_NUMB_MAX_SIZE];
 static int   loaded_label_count = 0;
 
+void         dump_tensor_attr(rknn_tensor_attr* attr)
+{
+    printf("  index=%d, name=%s, n_dims=%d, dims=[%d, %d, %d, %d], n_elems=%d, "
+           "size=%d, fmt=%s, type=%s, qnt_type=%s, "
+           "zp=%d, scale=%f\n",
+           attr->index,
+           attr->name,
+           attr->n_dims,
+           attr->dims[0],
+           attr->dims[1],
+           attr->dims[2],
+           attr->dims[3],
+           attr->n_elems,
+           attr->size,
+           get_format_string(attr->fmt),
+           get_type_string(attr->type),
+           get_qnt_type_string(attr->qnt_type),
+           attr->zp,
+           attr->scale);
+}
 static char* readLine(FILE* fp, char* buffer, int* len)
 {
     int    ch;

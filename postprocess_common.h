@@ -6,6 +6,8 @@
 
 #include <vector>
 
+void   dump_tensor_attr(rknn_tensor_attr* attr);
+
 int    init_post_process();
 void   deinit_post_process();
 char*  coco_cls_to_name(int cls_id);
