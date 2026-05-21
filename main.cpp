@@ -1,11 +1,13 @@
 #include "NPUDevicePool.h"
 #include "FrameBuffer.h"
 #include "LabelTools.h"
+#include "NPULoadMonitor.h"
 #include "log.h"
 
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <vector>
 
 #include <opencv2/opencv.hpp>
 
@@ -86,31 +88,40 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    const char* model_path = argv[1];
-    const char* image_path = argv[2];
+    const char*          model_path = argv[1];
+    const char*          image_path = argv[2];
 
     // Init detector pool (one per NPU core)
-    const rknn_core_mask cores[] = {
+    const rknn_core_mask cores[]    = {
         RKNN_NPU_CORE_0,
         RKNN_NPU_CORE_1,
         RKNN_NPU_CORE_2,
     };
     NPUDevicePool<3> pool;
-    int              ret = pool.init(model_path, cores);
+    LabelTools       label_tools("./model/drone.txt");
+    NPULoadMonitor   monitor;
+    std::thread      monitor_thread([&monitor] {
+        monitor.start(50000);
+    }); // 10ms
+
+    int              ret = pool.init(model_path, cores, &monitor);
     if (ret != 0)
     {
         LOG_ERROR("pool init fail! ret=%d", ret);
+        monitor.stop();
+        monitor_thread.join();
         return -1;
     }
-
-    LabelTools label_tools("./model/drone.txt");
 
     // Camera thread -> FrameBuffer
     FrameBuffer<cv::Mat> frame_buf;
     std::thread camera_thread(camera_thread_func, &frame_buf, image_path);
 
-    // Inference loop
-    int         frame_count = 0;
+    // Inference loop — async dispatch, don't block on detect
+    std::vector<std::thread> workers;
+    std::atomic<int>         frame_count{0};
+    const int                max_frames = 1200;
+
     while (g_running)
     {
         cv::Mat frame;
@@ -120,37 +131,60 @@ int main(int argc, char** argv)
             continue;
         }
 
-        // BGR -> RGB for inference
-        cv::Mat rgb;
-        cv::cvtColor(frame, rgb, cv::COLOR_BGR2RGB);
-        image_buffer_t            img = mat_to_buffer(rgb);
+        // Fire detect asynchronously
+        workers.emplace_back([&pool,
+                              &label_tools,
+                              &frame_count,
+                              max_frames,
+                              frame = std::move(frame)]() mutable {
+            int dev = pool.acquire();
+            auto t1 = getTimeStamp();
 
-        auto                      t1  = getTimeStamp();
-        int                       dev = pool.acquire();
-        object_detect_result_list results;
-        ret = pool.detector(dev).detect(&img, &results, 0.45, 0.45);
-        pool.release_detector(dev);
-        LOG_INFO("detect cost %f ms (core %d)", (getTimeStamp() - t1) * 1e-3, dev);
+            object_detect_result_list results;
+            int ret = -1;
 
-        if (ret != 0)
-        {
-            LOG_ERROR("detect fail! ret=%d", ret);
-            continue;
-        }
+            // BGR -> RGB
+            cv::Mat rgb;
+            cv::cvtColor(frame, rgb, cv::COLOR_BGR2RGB);
+            image_buffer_t img = mat_to_buffer(rgb);
 
-        // Draw results on original BGR frame
-        draw_results(frame, &results, label_tools);
-        cv::imwrite("out.png", frame);
-        LOG_INFO("saved out.png");
+            ret = pool.detector(dev).detect(&img, &results, 0.45, 0.45);
 
-        frame_count++;
-        if (frame_count >= 20)
-        {
-            g_running = false;
-        }
+            pool.release_detector(dev);
+            LOG_INFO("detect cost %f ms (core %d)",
+                     (getTimeStamp() - t1) * 1e-3,
+                     dev);
+
+            if (ret == 0)
+            {
+                // cv::Mat draw_img = frame.clone();
+                //
+                // draw_results(draw_img, &results, label_tools);
+                // cv::imwrite("out.png", draw_img);
+                // LOG_INFO("saved out.png");
+            }
+            else
+            {
+                LOG_ERROR("detect fail! ret=%d", ret);
+            }
+
+            if (frame_count.fetch_add(1) + 1 >= max_frames)
+            {
+                g_running = false;
+            }
+        });
     }
 
-    camera_thread.join();
+    // Wait for all in-flight detections to finish
+    for (auto& t : workers)
+    {
+        if (t.joinable())
+        {
+            t.join();
+        }
+    }
+    monitor.stop();
+    monitor_thread.join();
     pool.release();
     label_tools.release();
 

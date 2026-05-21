@@ -212,10 +212,10 @@ int NPUScheduler::init(const char* model_path, rknn_core_mask core_mask)
         LOG_ERROR("rknn_query IN_OUT_NUM fail! ret=%d", ret);
         return -1;
     }
-    LOG_DEBUG(
-        "model input num: %d, output num: %d", io_num.n_input, io_num.n_output);
+    // LOG_DEBUG(
+    //     "model input num: %d, output num: %d", io_num.n_input, io_num.n_output);
 
-    LOG_DEBUG("input tensors:");
+    // LOG_DEBUG("input tensors:");
     rknn_tensor_attr input_attrs[io_num.n_input];
     memset(input_attrs, 0, sizeof(input_attrs));
     for (int i = 0; i < io_num.n_input; i++)
@@ -230,10 +230,10 @@ int NPUScheduler::init(const char* model_path, rknn_core_mask core_mask)
             LOG_ERROR("rknn_query INPUT_ATTR fail! ret=%d", ret);
             return -1;
         }
-        dump_tensor_attr(&(input_attrs[i]));
+        // dump_tensor_attr(&(input_attrs[i]));
     }
 
-    LOG_DEBUG("output tensors:");
+    // LOG_DEBUG("output tensors:");
     rknn_tensor_attr output_attrs[io_num.n_output];
     memset(output_attrs, 0, sizeof(output_attrs));
     for (int i = 0; i < io_num.n_output; i++)
@@ -248,7 +248,7 @@ int NPUScheduler::init(const char* model_path, rknn_core_mask core_mask)
             LOG_ERROR("rknn_query OUTPUT_ATTR fail! ret=%d", ret);
             return -1;
         }
-        dump_tensor_attr(&(output_attrs[i]));
+        // dump_tensor_attr(&(output_attrs[i]));
     }
 
     ctx_.rknn_ctx = ctx;
@@ -292,26 +292,26 @@ int NPUScheduler::init(const char* model_path, rknn_core_mask core_mask)
     // TODO  Currently, only YOLOv8 is supported.
     type_              = ModelType::V8;
     ctx_.obj_class_num = output_attrs[1].dims[1];
-    LOG_DEBUG("model obj_class_num=%d", ctx_.obj_class_num);
+    // LOG_DEBUG("model obj_class_num=%d", ctx_.obj_class_num);
 
     if (input_attrs[0].fmt == RKNN_TENSOR_NCHW)
     {
-        LOG_DEBUG("model is NCHW input fmt");
+        // LOG_DEBUG("model is NCHW input fmt");
         ctx_.model_channel = input_attrs[0].dims[1];
         ctx_.model_height  = input_attrs[0].dims[2];
         ctx_.model_width   = input_attrs[0].dims[3];
     }
     else
     {
-        LOG_DEBUG("model is NHWC input fmt");
+        // LOG_DEBUG("model is NHWC input fmt");
         ctx_.model_height  = input_attrs[0].dims[1];
         ctx_.model_width   = input_attrs[0].dims[2];
         ctx_.model_channel = input_attrs[0].dims[3];
     }
-    LOG_DEBUG("model input height=%d, width=%d, channel=%d",
-              ctx_.model_height,
-              ctx_.model_width,
-              ctx_.model_channel);
+    // LOG_DEBUG("model input height=%d, width=%d, channel=%d",
+    //           ctx_.model_height,
+    //           ctx_.model_width,
+    //           ctx_.model_channel);
 
     return 0;
 }
@@ -346,8 +346,7 @@ int NPUScheduler::infer(rknn_input* inputs, rknn_output* outputs)
     }
     auto t1 = getTimeStamp();
 
-    LOG_DEBUG("rknn_run");
-    ret = rknn_run(ctx_.rknn_ctx, nullptr);
+    ret     = rknn_run(ctx_.rknn_ctx, nullptr);
     if (ret < 0)
     {
         LOG_ERROR("rknn_run fail! ret=%d", ret);
@@ -366,11 +365,11 @@ int NPUScheduler::infer(rknn_input* inputs, rknn_output* outputs)
 
     auto t3 = getTimeStamp();
 
-    LOG_DEBUG("rknn_inputs_set: %.2f ms, rknn_run: %.2f ms, rknn_outputs_get: "
-              "%.2f ms",
-              (t1 - t0) / 1000.0,
-              (t2 - t1) / 1000.0,
-              (t3 - t2) / 1000.0);
+    // LOG_DEBUG("rknn_inputs_set: %.2f ms, rknn_run: %.2f ms, rknn_outputs_get: "
+    //           "%.2f ms",
+    //           (t1 - t0) / 1000.0,
+    //           (t2 - t1) / 1000.0,
+    //           (t3 - t2) / 1000.0);
 
     return 0;
 }
