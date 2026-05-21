@@ -76,7 +76,6 @@ cd ${BUILD_DIR}
 cmake .. \
     -DCMAKE_SYSTEM_NAME=Linux \
     -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-    -DDISABLE_RGA=${DISABLE_RGA} \
     -DCMAKE_INSTALL_PREFIX=${INSTALL_DIR}
 make -j4
 make install

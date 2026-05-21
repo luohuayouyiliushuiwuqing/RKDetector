@@ -2,33 +2,17 @@ cmake_minimum_required(VERSION 3.15)
 
 project(rknn_model_zoo_utils)
 
-if(DISABLE_RGA)
-    add_definitions(-DDISABLE_RGA)
-endif ()
-
 add_definitions(-DLIBRGA_IM2D_HANDLE)
 
 add_library(imageutils STATIC
-    image_utils.c
+        image_utils.c
 )
 
 target_include_directories(imageutils PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${STB_INCLUDES}
-    ${LIBRGA_INCLUDES}
+        ${CMAKE_CURRENT_SOURCE_DIR}
+        ${LIBRGA_INCLUDES}
 )
 
 target_link_libraries(imageutils
-    ${LIBRGA}
+        ${LIBRGA}
 )
-
-if (DISABLE_LIBJPEG)
-    add_definitions(-DDISABLE_LIBJPEG)
-else()
-    target_link_libraries(imageutils
-        ${LIBJPEG}
-    )
-    target_include_directories(imageutils PUBLIC
-        ${LIBJPEG_INCLUDES}
-    )
-endif()

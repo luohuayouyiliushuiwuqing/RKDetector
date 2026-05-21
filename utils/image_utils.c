@@ -1,13 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <string.h>
 
 #include "im2d.h"
 #include "drmrga.h"
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-
 #include "image_utils.h"
 
 static int crop_and_scale_image_c(int            channel,
@@ -520,11 +517,11 @@ static int convert_image_rga(image_buffer_t* src_img,
         p_imcolor[2]      = color;
         p_imcolor[3]      = color;
         printf("fill dst image (x y w h)=(%d %d %d %d) with color=0x%x",
-                  dst_whole_rect.x,
-                  dst_whole_rect.y,
-                  dst_whole_rect.width,
-                  dst_whole_rect.height,
-                  imcolor);
+               dst_whole_rect.x,
+               dst_whole_rect.y,
+               dst_whole_rect.width,
+               dst_whole_rect.height,
+               imcolor);
         ret_rga = imfill(rga_buf_dst, dst_whole_rect, imcolor);
         if (ret_rga <= 0)
         {
@@ -681,17 +678,17 @@ int convert_image_with_letterbox(image_buffer_t* src_image,
         _left_offset  = dst_box.left;
     }
     printf("scale=%f dst_box=(%d %d %d %d) allow_slight_change=%d "
-              "_left_offset=%d _top_offset=%d padding_w=%d padding_h=%d",
-              scale,
-              dst_box.left,
-              dst_box.top,
-              dst_box.right,
-              dst_box.bottom,
-              allow_slight_change,
-              _left_offset,
-              _top_offset,
-              padding_w,
-              padding_h);
+           "_left_offset=%d _top_offset=%d padding_w=%d padding_h=%d",
+           scale,
+           dst_box.left,
+           dst_box.top,
+           dst_box.right,
+           dst_box.bottom,
+           allow_slight_change,
+           _left_offset,
+           _top_offset,
+           padding_w,
+           padding_h);
 
     //set offset and scale
     if (letterbox != NULL)
