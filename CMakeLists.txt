@@ -20,7 +20,6 @@ set(SRCS
 
 set(UTILS_LIBS
         imageutils
-        fileutils
         ${LIBRKNNRT}
         ${LIBOPENCV}
         dl
