@@ -1,6 +1,6 @@
 #include "RKDetector.h"
 #include "image_utils.h"
-#include "log.h"
+#include "../include/log.h"
 
 #include <stdlib.h>
 #include <string.h>

@@ -11,10 +11,11 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 set(SRCS
-        main.cpp
-        NPUScheduler.cpp
-        RKDetector.cpp
-        LabelTools.cpp
+        src/main.cpp
+        src/NPUScheduler.cpp
+        src/RKDetector.cpp
+        src/LabelTools.cpp
+        src/NPULoadMonitor.cpp
 )
 
 set(UTILS_LIBS
@@ -30,6 +31,7 @@ include_directories(
         ${LIBRKNNRT_INCLUDES}
         ${LIBOPENCV_INCLUDES}
         ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/include
 )
 
 add_executable(rknn_demo ${SRCS})

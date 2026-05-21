@@ -1,5 +1,5 @@
 #include "NPUScheduler.h"
-#include "log.h"
+#include "../include/log.h"
 
 #include <math.h>
 #include <stdio.h>

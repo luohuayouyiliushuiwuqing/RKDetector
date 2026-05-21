@@ -2,7 +2,7 @@
 #include "FrameBuffer.h"
 #include "LabelTools.h"
 #include "NPULoadMonitor.h"
-#include "log.h"
+#include "../include/log.h"
 
 #include <atomic>
 #include <thread>
