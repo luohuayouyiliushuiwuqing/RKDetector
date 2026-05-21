@@ -9,20 +9,15 @@
 #include <string>
 #include <chrono>
 #include <thread>
-#include <unistd.h>
-
-struct NpuLoadInfo
-{
-    int load[3] = {0, 0, 0};
-};
+#include <utility>
 
 class NPULoadMonitor
 {
 public:
-    explicit NPULoadMonitor(
-        const std::string& path = "/sys/kernel/debug/rknpu/load")
-    : file_path_(path)
-    , running_(false)
+    explicit NPULoadMonitor(std::string path = "/sys/kernel/debug/rknpu/load",
+                            int         npu_core_len = 3)
+    : file_path_(std::move(path))
+    , npu_core_len(npu_core_len)
     {
     }
 
@@ -37,11 +32,14 @@ public:
         running_ = true;
         while (running_)
         {
-            NpuLoadInfo info;
+            int info[128] = {0};
             if (read_load(info))
             {
                 std::lock_guard<std::mutex> lock(mtx_);
-                current_ = info;
+                for (int i = 0; i < npu_core_len; ++i)
+                {
+                    current_load[i] = info[i];
+                }
             }
             std::this_thread::sleep_for(std::chrono::microseconds(interval_us));
         }
@@ -53,12 +51,6 @@ public:
         running_ = false;
     }
 
-    NpuLoadInfo get_info()
-    {
-        std::lock_guard<std::mutex> lock(mtx_);
-        return current_;
-    }
-
     // Convenience: get load for a specific core [0,1,2]
     int get_core_load(int core)
     {
@@ -67,7 +59,7 @@ public:
             return 0;
         }
         std::lock_guard<std::mutex> lock(mtx_);
-        return current_.load[core];
+        return current_load[core];
     }
 
 private:
@@ -87,7 +79,7 @@ private:
     //   "NPU load:  Core0: 45%, Core1: 30%, Core2: 10%"
     //   or: "45 30 10"
     // Returns true if at least one value was parsed.
-    bool read_load(NpuLoadInfo& info)
+    bool read_load(int info[])
     {
         if (!file_.is_open())
         {
@@ -103,48 +95,44 @@ private:
         }
 
         // Extract all numbers from the line
-        int  vals[3]  = {0, 0, 0};
-        int  count    = 0;
-        bool in_num   = false;
-        int  num      = 0;
-
-        for (size_t i = 0; i <= line.size() && count < 3; i++)
+        size_t pos = 0;
+        while ((pos = line.find("Core", pos)) != std::string::npos)
         {
-            char c = (i < line.size()) ? line[i] : ' ';
-            if (c >= '0' && c <= '9')
+            if (line[pos + 4] >= '0' && line[pos + 4] <= '9')
             {
-                in_num = true;
-                num    = num * 10 + (c - '0');
-            }
-            else
-            {
-                if (in_num)
+                int core_id = line[pos + 4] - '0';
+                if (core_id >= 0 && core_id < npu_core_len)
                 {
-                    vals[count++] = num;
-                    num           = 0;
-                    in_num        = false;
+                    size_t percent_pos = line.find("%", pos);
+                    if (percent_pos != std::string::npos)
+                    {
+                        // Extract the number before '%'
+                        size_t num_start = line.rfind(" ", percent_pos);
+                        if (num_start != std::string::npos &&
+                            num_start < percent_pos)
+                        {
+                            std::string num_str = line.substr(
+                                num_start + 1, percent_pos - num_start - 1);
+                            int load_value = std::stoi(num_str);
+                            info[core_id]  = load_value;
+                        }
+                    }
                 }
             }
-        }
-
-        if (count == 0)
-        {
-            return false;
-        }
-
-        for (int i = 0; i < count && i < 3; i++)
-        {
-            info.load[i] = vals[i];
+            pos += 9; // 跳过已找到的 "Core" 避免死循环
         }
         return true;
     }
 
-    std::string      file_path_;
-    std::ifstream    file_;
+    std::string       file_path_;
+    std::ifstream     file_;
     std::atomic<bool> running_{false};
 
-    std::mutex       mtx_;
-    NpuLoadInfo      current_;
+    std::mutex        mtx_;
+
+    int               current_load[128] = {0};
+
+    int               npu_core_len      = 3;
 };
 
 #endif // RKDETECTOR_NPULOADMONITOR_H
