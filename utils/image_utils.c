@@ -4,7 +4,6 @@
 
 #include "im2d.h"
 #include "drmrga.h"
-#include "log.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_NO_THREAD_LOCALS
@@ -35,7 +34,7 @@ static int crop_and_scale_image_c(int            channel,
 {
     if (dst == NULL)
     {
-        LOG_ERROR("dst buffer is null");
+        printf("dst buffer is null");
         return -1;
     }
 
@@ -286,14 +285,14 @@ static int convert_image_cpu(image_buffer_t* src,
     }
     else
     {
-        LOG_ERROR("no support format %d", src->format);
+        printf("no support format %d", src->format);
     }
     if (reti != 0)
     {
-        LOG_ERROR("convert_image_cpu fail %d", reti);
+        printf("convert_image_cpu fail %d", reti);
         return -1;
     }
-    LOG_DEBUG("finish");
+    printf("finish");
     return 0;
 }
 
@@ -448,7 +447,7 @@ static int convert_image_rga(image_buffer_t* src_img,
         }
         if (rga_handle_src <= 0)
         {
-            LOG_ERROR("src handle error %d", rga_handle_src);
+            printf("src handle error %d", rga_handle_src);
             ret = -1;
             goto err;
         }
@@ -491,7 +490,7 @@ static int convert_image_rga(image_buffer_t* src_img,
         }
         if (rga_handle_dst <= 0)
         {
-            LOG_ERROR("dst handle error %d", rga_handle_dst);
+            printf("dst handle error %d", rga_handle_dst);
             ret = -1;
             goto err;
         }
@@ -526,7 +525,7 @@ static int convert_image_rga(image_buffer_t* src_img,
         p_imcolor[1]      = color;
         p_imcolor[2]      = color;
         p_imcolor[3]      = color;
-        LOG_DEBUG("fill dst image (x y w h)=(%d %d %d %d) with color=0x%x",
+        printf("fill dst image (x y w h)=(%d %d %d %d) with color=0x%x",
                   dst_whole_rect.x,
                   dst_whole_rect.y,
                   dst_whole_rect.width,
@@ -542,7 +541,7 @@ static int convert_image_rga(image_buffer_t* src_img,
             }
             else
             {
-                LOG_WARN("Can not fill color on target image");
+                printf("Can not fill color on target image");
             }
         }
     }
@@ -552,8 +551,8 @@ static int convert_image_rga(image_buffer_t* src_img,
         improcess(rga_buf_src, rga_buf_dst, pat, srect, drect, prect, usage);
     if (ret_rga <= 0)
     {
-        LOG_ERROR("Error on improcess STATUS=%d", ret_rga);
-        LOG_ERROR("RGA error message: %s", imStrError((IM_STATUS)ret_rga));
+        printf("Error on improcess STATUS=%d", ret_rga);
+        printf("RGA error message: %s", imStrError((IM_STATUS)ret_rga));
         ret = -1;
     }
 
@@ -580,7 +579,7 @@ int convert_image(image_buffer_t* src_img,
 {
     int ret;
 #if defined(DISABLE_RGA)
-    LOG_INFO("convert image use cpu");
+    printf("convert image use cpu");
     ret = convert_image_cpu(src_img, dst_img, src_box, dst_box, color);
 #else
     if (src_img->width % 16 == 0 && dst_img->width % 16 == 0)
@@ -588,13 +587,13 @@ int convert_image(image_buffer_t* src_img,
         ret = convert_image_rga(src_img, dst_img, src_box, dst_box, color);
         if (ret != 0)
         {
-            LOG_INFO("try convert image use cpu");
+            printf("try convert image use cpu");
             ret = convert_image_cpu(src_img, dst_img, src_box, dst_box, color);
         }
     }
     else
     {
-        LOG_INFO("src width is not 16-aligned, convert image use cpu");
+        printf("src width is not 16-aligned, convert image use cpu");
         ret = convert_image_cpu(src_img, dst_img, src_box, dst_box, color);
     }
 #endif
@@ -687,7 +686,7 @@ int convert_image_with_letterbox(image_buffer_t* src_image,
         dst_box.right = dst_box.left + resize_w - 1;
         _left_offset  = dst_box.left;
     }
-    LOG_DEBUG("scale=%f dst_box=(%d %d %d %d) allow_slight_change=%d "
+    printf("scale=%f dst_box=(%d %d %d %d) allow_slight_change=%d "
               "_left_offset=%d _top_offset=%d padding_w=%d padding_h=%d",
               scale,
               dst_box.left,
@@ -715,7 +714,7 @@ int convert_image_with_letterbox(image_buffer_t* src_image,
         dst_image->virt_addr = (uint8_t*)malloc(dst_size);
         if (dst_image->virt_addr == NULL)
         {
-            LOG_ERROR("malloc size %d error", dst_size);
+            printf("malloc size %d error", dst_size);
             return -1;
         }
     }

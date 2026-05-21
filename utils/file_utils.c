@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "log.h"
-
 #define MAX_TEXT_LINE_LENGTH 1024
 
 unsigned char* load_model(const char* filename, int* model_size)
@@ -11,7 +9,7 @@ unsigned char* load_model(const char* filename, int* model_size)
     FILE* fp = fopen(filename, "rb");
     if (fp == NULL)
     {
-        LOG_ERROR("fopen %s fail!", filename);
+        printf("fopen %s fail!", filename);
         return NULL;
     }
     fseek(fp, 0, SEEK_END);
@@ -20,7 +18,7 @@ unsigned char* load_model(const char* filename, int* model_size)
     fseek(fp, 0, SEEK_SET);
     if (model_len != fread(model, 1, model_len, fp))
     {
-        LOG_ERROR("fread %s fail!", filename);
+        printf("fread %s fail!", filename);
         free(model);
         fclose(fp);
         return NULL;
@@ -35,7 +33,7 @@ int read_data_from_file(const char* path, char** out_data)
     FILE* fp = fopen(path, "rb");
     if (fp == NULL)
     {
-        LOG_ERROR("fopen %s fail!", path);
+        printf("fopen %s fail!", path);
         return -1;
     }
     fseek(fp, 0, SEEK_END);
@@ -45,7 +43,7 @@ int read_data_from_file(const char* path, char** out_data)
     fseek(fp, 0, SEEK_SET);
     if (file_size != fread(data, 1, file_size, fp))
     {
-        LOG_ERROR("fread %s fail!", path);
+        printf("fread %s fail!", path);
         free(data);
         fclose(fp);
         return -1;
@@ -65,7 +63,7 @@ int write_data_to_file(const char* path, const char* data, unsigned int size)
     fp = fopen(path, "w");
     if (fp == NULL)
     {
-        LOG_ERROR("open error: %s", path);
+        printf("open error: %s", path);
         return -1;
     }
 
@@ -100,12 +98,12 @@ char** read_lines_from_file(const char* filename, int* line_count)
     FILE* file = fopen(filename, "r");
     if (file == NULL)
     {
-        LOG_ERROR("Failed to open the file");
+        printf("Failed to open the file");
         return NULL;
     }
 
     int num_lines = count_lines(file);
-    LOG_INFO("num_lines=%d", num_lines);
+    printf("num_lines=%d", num_lines);
     char** lines = (char**)malloc(num_lines * sizeof(char*));
     memset(lines, 0, num_lines * sizeof(char*));
 
