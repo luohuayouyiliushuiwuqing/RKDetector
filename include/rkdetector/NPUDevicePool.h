@@ -46,40 +46,41 @@ public:
              const rknn_core_mask* cores,
              NPULoadMonitor*       monitor = nullptr)
     {
-        std::lock_guard<std::mutex> lock(mtx_);
-        monitor_ = monitor;
+        std::lock_guard<std::mutex> lock(m_mtx);
+        m_monitor_ptr = std::shared_ptr<NPULoadMonitor>(monitor);
         for (int i = 0; i < N; i++)
         {
             LOG_INFO("init detector[%d] on core %s",
                      i,
                      cov_rk2_string(cores[i]).c_str());
-            int ret = detectors_[i].init(model_path, label_path, cores[i]);
+            int ret =
+                m_detectors_array[i].init(model_path, label_path, cores[i]);
             if (ret != 0)
             {
                 LOG_ERROR("detector[%d] init fail! ret=%d", i, ret);
                 for (int j = i - 1; j >= 0; j--)
                 {
-                    detectors_[j].release();
+                    m_detectors_array[j].release();
                 }
                 return -1;
             }
-            busy_[i] = false;
+            m_busy_array[i] = false;
         }
-        last_used_ = -1;
+        m_last_used = -1;
         LOG_INFO("NPUDevicePool: %d detectors initialized", N);
         return 0;
     }
 
     void release()
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::lock_guard<std::mutex> lock(m_mtx);
         for (int i = 0; i < N; i++)
         {
-            detectors_[i].release();
-            busy_[i] = false;
+            m_detectors_array[i].release();
+            m_busy_array[i] = false;
         }
-        last_used_ = -1;
-        cv_.notify_all();
+        m_last_used = -1;
+        m_cv.notify_all();
     }
 
     // Acquire the best available detector:
@@ -89,11 +90,11 @@ public:
     // Blocks if all cores are busy.
     int acquire()
     {
-        std::unique_lock<std::mutex> lock(mtx_);
-        cv_.wait(lock, [this] {
+        std::unique_lock<std::mutex> lock(m_mtx);
+        m_cv.wait(lock, [this] {
             for (int i = 0; i < N; i++)
             {
-                if (!busy_[i])
+                if (!m_busy_array[i])
                 {
                     return true;
                 }
@@ -107,29 +108,29 @@ public:
     void release_detector(int idx)
     {
         {
-            std::lock_guard<std::mutex> lock(mtx_);
+            std::lock_guard<std::mutex> lock(m_mtx);
             if (idx >= 0 && idx < N)
             {
-                busy_[idx] = false;
+                m_busy_array[idx] = false;
             }
         }
-        cv_.notify_one();
+        m_cv.notify_one();
     }
 
     RKDetector& detector(int idx)
     {
-        return detectors_[idx];
+        return m_detectors_array[idx];
     }
 
 private:
-    // Must be called with mtx_ held.
+    // Must be called with m_mtx held.
     // Strategy: round-robin among free cores (skip last_used_).
     // Only consult monitor to avoid cores with very high external load (>70%).
     int pick_best_locked()
     {
         // Log current busy state
         // LOG_DEBUG("pick: busy=[%d,%d,%d] last_used=%d",
-        //           busy_[0], busy_[1], busy_[2], last_used_);
+        //           m_busy_array_[0], m_busy_array_[1], m_busy_array_[2], last_used_);
 
         // Build list of free cores, excluding last_used_
         int candidate[N];
@@ -137,7 +138,7 @@ private:
 
         for (int i = 0; i < N; i++)
         {
-            if (!busy_[i] && i != last_used_)
+            if (!m_busy_array[i] && i != m_last_used)
             {
                 candidate[n_candidates++] = i;
             }
@@ -148,7 +149,7 @@ private:
         {
             for (int i = 0; i < N; i++)
             {
-                if (!busy_[i])
+                if (!m_busy_array[i])
                 {
                     candidate[n_candidates++] = i;
                     break;
@@ -172,11 +173,11 @@ private:
         int filtered[N];
         int n_filtered = 0;
 
-        if (monitor_)
+        if (m_monitor_ptr)
         {
             for (int i = 0; i < n_candidates; i++)
             {
-                int load = monitor_->get_core_load(candidate[i]);
+                int load = m_monitor_ptr->get_core_load(candidate[i]);
                 // LOG_DEBUG("pick: core %d sys_load=%d", candidate[i], load);
                 if (load <= 70)
                 {
@@ -203,26 +204,27 @@ private:
         int best = pool[0];
         for (int i = 0; i < n_pool; i++)
         {
-            if (pool[i] > last_used_)
+            if (pool[i] > m_last_used)
             {
                 best = pool[i];
                 break;
             }
         }
 
-        busy_[best] = true;
-        last_used_  = best;
+        m_busy_array[best] = true;
+        m_last_used        = best;
         // LOG_DEBUG("pick: -> core %d", best);
         return best;
     }
 
-    std::array<RKDetector, N> detectors_;
-    std::array<bool, N>       busy_{};
-    int                       last_used_{-1};
-    NPULoadMonitor*           monitor_{};
+    std::array<RKDetector, N>       m_detectors_array;
+    std::array<bool, N>             m_busy_array = {};
+    int                             m_last_used  = -1;
 
-    std::mutex                mtx_;
-    std::condition_variable   cv_;
+    std::shared_ptr<NPULoadMonitor> m_monitor_ptr;
+
+    std::mutex                      m_mtx;
+    std::condition_variable         m_cv;
 };
 
 } // namespace rkdet

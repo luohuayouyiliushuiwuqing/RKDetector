@@ -17,7 +17,6 @@ static std::atomic<bool> g_running{true};
 static void              camera_thread_func(const char*               dev_path,
                                             int                       cam_id,
                                             NPUDevicePool<3>*         pool,
-                                            std::atomic<int>*         frame_count,
                                             std::vector<std::thread>* workers,
                                             std::mutex*               workers_mtx)
 {
@@ -28,6 +27,8 @@ static void              camera_thread_func(const char*               dev_path,
         return;
     }
     LOG_INFO("camera[%d]: opened %s", cam_id, dev_path);
+
+    auto frame_count = new std::atomic<int>(0);
 
     while (g_running)
     {
@@ -60,8 +61,6 @@ static void              camera_thread_func(const char*               dev_path,
                 uint8_t* rgb_buf  = (uint8_t*)malloc(rgb_size);
                 cvtColor(nv12_copy,
                          IMAGE_FORMAT_YUV420SP_NV12,
-                         w,
-                         h,
                          rgb_buf,
                          IMAGE_FORMAT_RGB888,
                          w,
@@ -108,17 +107,10 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    const char* model_path = argv[1];
-
-    const char* label_path = "model/drone.txt";
-
-    const char* cameras[]  = {
-        "/dev/mipi_camera_0_main",
-        "/dev/mipi_camera_1_main",
-    };
+    const char*          model_path = argv[1];
 
     // Init detector pool (one per NPU core)
-    const rknn_core_mask cores[] = {
+    const rknn_core_mask cores[]    = {
         RKNN_NPU_CORE_0,
         RKNN_NPU_CORE_1,
         RKNN_NPU_CORE_2,
@@ -129,7 +121,7 @@ int main(int argc, char** argv)
         monitor.start(50);
     });
 
-    int              ret = pool.init(model_path, label_path, cores, &monitor);
+    int ret = pool.init(model_path, "model/drone.txt", cores, &monitor);
     if (ret != 0)
     {
         LOG_ERROR("pool init fail! ret=%d", ret);
@@ -141,21 +133,18 @@ int main(int argc, char** argv)
     // Shared workers container
     std::vector<std::thread> workers;
     std::mutex               workers_mtx;
-    std::atomic<int>         frame_count{0};
 
     // Launch two camera threads — both feed into the same pool
     std::thread              cam0(camera_thread_func,
-                     cameras[0],
+                     "/dev/mipi_camera_0_main",
                      0,
                      &pool,
-                     &frame_count,
                      &workers,
                      &workers_mtx);
     std::thread              cam1(camera_thread_func,
-                     cameras[1],
+                     "/dev/mipi_camera_1_main",
                      1,
                      &pool,
-                     &frame_count,
                      &workers,
                      &workers_mtx);
 

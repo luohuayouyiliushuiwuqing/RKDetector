@@ -731,22 +731,18 @@ int convert_image_with_letterbox(image_buffer_t* src_image,
 
 uint32_t cvtColor(void*          src,
                   image_format_t src_format,
-                  uint64_t       src_width,
-                  uint64_t       src_height,
                   void*          dst,
                   image_format_t dst_format,
-                  uint64_t       dst_width,
-                  uint64_t       dst_height)
+                  int            width,
+                  int            height)
 {
-    int ret         = 0;
+    int ret          = 0;
 
-    int rga_src_fmt = get_rga_fmt(src_format);
-    int rga_dst_fmt = get_rga_fmt(dst_format);
+    int rga_src_fmt  = get_rga_fmt(src_format);
+    int rga_dst_fmt  = get_rga_fmt(dst_format);
 
-    int src_buf_size =
-        src_width * src_height * get_bpp_from_format(rga_src_fmt);
-    int dst_buf_size =
-        dst_width * dst_height * get_bpp_from_format(rga_dst_fmt);
+    int src_buf_size = width * height * get_bpp_from_format(rga_src_fmt);
+    int dst_buf_size = width * height * get_bpp_from_format(rga_dst_fmt);
 
     rga_buffer_handle_t src_handle =
         importbuffer_virtualaddr(src, src_buf_size);
@@ -755,9 +751,9 @@ uint32_t cvtColor(void*          src,
         importbuffer_virtualaddr(dst, dst_buf_size);
 
     rga_buffer_t src_img =
-        wrapbuffer_handle(src_handle, src_width, src_height, rga_src_fmt);
+        wrapbuffer_handle(src_handle, width, height, rga_src_fmt);
     rga_buffer_t dst_img =
-        wrapbuffer_handle(dst_handle, dst_width, dst_height, rga_dst_fmt);
+        wrapbuffer_handle(dst_handle, width, height, rga_dst_fmt);
     im_rect src_rect = {0, 0, 0, 0};
     im_rect dst_rect = {0, 0, 0, 0};
     ret              = imcheck(src_img, dst_img, src_rect, dst_rect);

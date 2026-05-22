@@ -54,11 +54,9 @@ int      get_image_size(image_buffer_t* image);
 
 uint32_t cvtColor(void*          src,
                   image_format_t src_format,
-                  uint64_t       src_width,
-                  uint64_t       src_height,
                   void*          dst,
                   image_format_t dst_format,
-                  uint64_t       dst_width,
-                  uint64_t       dst_height);
+                  int            width,
+                  int            height);
 
 #endif // RKDETECTOR_RK_IMAGE_UTILS_H
