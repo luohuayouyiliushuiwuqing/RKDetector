@@ -7,6 +7,10 @@
 #include <unistd.h>
 #include <sys/time.h>
 
+#ifdef __cplusplus
+#include <mutex>
+#endif
+
 enum log_level_t
 {
     LOG_LVL_ERROR = 1,
@@ -76,6 +80,10 @@ __attribute__((format(printf, 4, 5))) static inline void log_log(
         return;
     }
 
+    /* Format entire message into buffer first */
+    char    buf[1024];
+    int     off = 0;
+
     struct timeval tv;
     gettimeofday(&tv, NULL);
     struct tm tm_info;
@@ -98,22 +106,22 @@ __attribute__((format(printf, 4, 5))) static inline void log_log(
 
     int use_color = LOG_COLOR && isatty(STDERR_FILENO);
 
-    fprintf(stderr, "[%s.%06ld] ", time_buf, tv.tv_usec);
+    off += snprintf(buf + off, sizeof(buf) - off, "[%s.%06ld] ", time_buf, tv.tv_usec);
 
     if (use_color)
     {
-        fprintf(stderr,
-                "%s[%s]%s",
-                log_level_color(level),
-                log_level_str(level),
-                "\033[0m");
+        off += snprintf(buf + off, sizeof(buf) - off,
+                        "%s[%s]%s",
+                        log_level_color(level),
+                        log_level_str(level),
+                        "\033[0m");
     }
     else
     {
-        fprintf(stderr, "[%s]", log_level_str(level));
+        off += snprintf(buf + off, sizeof(buf) - off, "[%s]", log_level_str(level));
     }
 #ifndef NDEBUG
-    fprintf(stderr, " [%s:%d] ", filename, line);
+    off += snprintf(buf + off, sizeof(buf) - off, " [%s:%d] ", filename, line);
 #else
     (void)filename;
     (void)line;
@@ -121,10 +129,17 @@ __attribute__((format(printf, 4, 5))) static inline void log_log(
 
     va_list args;
     va_start(args, fmt);
-    vfprintf(stderr, fmt, args);
+    off += vsnprintf(buf + off, sizeof(buf) - off, fmt, args);
     va_end(args);
 
-    fprintf(stderr, "\n");
+    off += snprintf(buf + off, sizeof(buf) - off, "\n");
+
+    /* Single atomic write under lock */
+#ifdef __cplusplus
+    static std::mutex log_mtx;
+    std::lock_guard<std::mutex> lock(log_mtx);
+#endif
+    fwrite(buf, 1, off, stderr);
 }
 
 #define LOG_ERROR(...) log_log(LOG_LVL_ERROR, __FILE__, __LINE__, __VA_ARGS__)
