@@ -29,11 +29,11 @@ extern "C"
  * @param color [in] Pading color if dst_box can not fill target image
  * @return int 
  */
-    int convert_image(image_buffer_t* src_image,
-                      image_buffer_t* dst_image,
-                      image_rect_t*   src_box,
-                      image_rect_t*   dst_box,
-                      char            color);
+    int      convert_image(image_buffer_t* src_image,
+                           image_buffer_t* dst_image,
+                           image_rect_t*   src_box,
+                           image_rect_t*   dst_box,
+                           char            color);
 
     /**
  * @brief Convert image with letterbox
@@ -44,18 +44,27 @@ extern "C"
  * @param color [in] Fill color on target image
  * @return int 
  */
-    int convert_image_with_letterbox(image_buffer_t* src_image,
-                                     image_buffer_t* dst_image,
-                                     letterbox_t*    letterbox,
-                                     char            color);
+    int      convert_image_with_letterbox(image_buffer_t* src_image,
+                                          image_buffer_t* dst_image,
+                                          letterbox_t*    letterbox,
+                                          char            color);
 
     /**
- * @brief Get the image size
- * 
- * @param image [in] Image
- * @return int image size
- */
-    int get_image_size(image_buffer_t* image);
+* @brief Get the image size
+*
+* @param image [in] Image
+* @return int image size
+*/
+    int      get_image_size(image_buffer_t* image);
+
+    // uint32_t cvtColor(void*    src,
+    //                   int      src_format,
+    //                   uint64_t src_width,
+    //                   uint64_t src_height,
+    //                   void*    dst,
+    //                   int      dst_format,
+    //                   uint64_t dst_width,
+    //                   uint64_t dst_height);
 
 #ifdef __cplusplus
 } // extern "C"

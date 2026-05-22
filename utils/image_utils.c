@@ -6,6 +6,7 @@
 #include "im2d.h"
 #include "drmrga.h"
 #include "image_utils.h"
+#include "RgaUtils.h"
 
 static int crop_and_scale_image_c(int            channel,
                                   unsigned char* src,
@@ -712,3 +713,59 @@ int convert_image_with_letterbox(image_buffer_t* src_image,
     ret = convert_image(src_image, dst_image, &src_box, &dst_box, color);
     return ret;
 }
+//
+// #define release_buffer(src_handle, dst_handle)                                 \
+//     {                                                                          \
+//         if (src_handle)                                                        \
+//         {                                                                      \
+//             releasebuffer_handle(src_handle);                                  \
+//             src_handle = 0;                                                    \
+//         }                                                                      \
+//         if (dst_handle)                                                        \
+//         {                                                                      \
+//             releasebuffer_handle(dst_handle);                                  \
+//             dst_handle = 0;                                                    \
+//         }                                                                      \
+//     }
+//
+// uint32_t cvtColor(void*    src,
+//                   int      src_format,
+//                   uint64_t src_width,
+//                   uint64_t src_height,
+//                   void*    dst,
+//                   int      dst_format,
+//                   uint64_t dst_width,
+//                   uint64_t dst_height)
+// {
+//     int ret          = 0;
+//     int src_buf_size = src_width * src_height * get_bpp_from_format(src_format);
+//     int dst_buf_size = dst_width * dst_height * get_bpp_from_format(dst_format);
+//
+//     rga_buffer_handle_t src_handle =
+//         importbuffer_virtualaddr(src, src_buf_size);
+//
+//     rga_buffer_handle_t dst_handle =
+//         importbuffer_virtualaddr(dst, dst_buf_size);
+//
+//     rga_buffer_t src_img =
+//         wrapbuffer_handle(src_handle, src_width, src_height, src_format);
+//     rga_buffer_t dst_img =
+//         wrapbuffer_handle(dst_handle, dst_width, dst_height, dst_format);
+//     ret = imcheck(src_img, dst_img, {}, {});
+//     if (IM_STATUS_NOERROR != ret)
+//     {
+//         printf("check error! %s", imStrError((IM_STATUS)ret));
+//         release_buffer(src_handle, dst_handle);
+//         return -1;
+//     }
+//     ret = imcvtcolor(src_img, dst_img, src_format, dst_format);
+//     if (ret != IM_STATUS_SUCCESS)
+//     {
+//         printf("running failed, %s\n", imStrError((IM_STATUS)ret));
+//         release_buffer(src_handle, dst_handle);
+//         return -1;
+//     }
+//
+//     release_buffer(src_handle, dst_handle);
+//     return 0;
+// }

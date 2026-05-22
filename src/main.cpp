@@ -1,19 +1,20 @@
 #include "NPUDevicePool.h"
-#include "FrameBuffer.h"
 #include "LabelTools.h"
 #include "NPULoadMonitor.h"
-#include "../include/log.h"
+#include "V4L2Camera.h"
+#include "include/log.h"
 
 #include <atomic>
 #include <thread>
 #include <chrono>
+#include <mutex>
 #include <vector>
 
 #include <opencv2/opencv.hpp>
 
 static std::atomic<bool> g_running{true};
 
-static image_buffer_t    mat_to_buffer(const cv::Mat& mat)
+static image_buffer_t mat_to_buffer(const cv::Mat& mat)
 {
     image_buffer_t buf;
     memset(&buf, 0, sizeof(buf));
@@ -25,74 +26,89 @@ static image_buffer_t    mat_to_buffer(const cv::Mat& mat)
     return buf;
 }
 
-static void camera_thread_func(FrameBuffer<cv::Mat>* fb, const char* image_path)
+static void camera_thread_func(const char*            dev_path,
+                               int                    cam_id,
+                               NPUDevicePool<3>*      pool,
+                               const LabelTools*      label_tools,
+                               std::atomic<int>*      frame_count,
+                               int                    max_frames,
+                               std::vector<std::thread>* workers,
+                               std::mutex*            workers_mtx)
 {
-    cv::Mat img = cv::imread(image_path, cv::IMREAD_COLOR);
-    if (img.empty())
+    V4L2Camera cap;
+    if (!cap.open(dev_path))
     {
-        LOG_ERROR("camera: read image fail! path=%s", image_path);
-        g_running = false;
+        LOG_ERROR("camera[%d]: open %s fail!", cam_id, dev_path);
         return;
     }
-    LOG_INFO("camera: loaded %s (%dx%d)", image_path, img.cols, img.rows);
+    LOG_INFO("camera[%d]: opened %s", cam_id, dev_path);
 
     while (g_running)
     {
-        fb->push(img);
-        std::this_thread::sleep_for(std::chrono::milliseconds(33));
+        cv::Mat frame;
+        if (!cap.read(frame))
+        {
+            LOG_WARN("camera[%d]: read fail, skip", cam_id);
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            continue;
+        }
+
+        // Dispatch detection asynchronously
+        {
+            std::lock_guard<std::mutex> lock(*workers_mtx);
+            workers->emplace_back([pool,
+                                   label_tools,
+                                   frame_count,
+                                   max_frames,
+                                   cam_id,
+                                   frame = std::move(frame)]() mutable {
+                int dev = pool->acquire();
+                auto t1 = getTimeStamp();
+
+                cv::Mat rgb;
+                cv::cvtColor(frame, rgb, cv::COLOR_BGR2RGB);
+                image_buffer_t img = mat_to_buffer(rgb);
+
+                object_detect_result_list results;
+                int ret = pool->detector(dev).detect(&img, &results, 0.45, 0.45);
+
+                pool->release_detector(dev);
+                LOG_INFO("cam[%d] detect cost %.1f ms (core %d)",
+                         cam_id,
+                         (getTimeStamp() - t1) * 1e-3,
+                         dev);
+
+                if (ret != 0)
+                {
+                    LOG_ERROR("cam[%d] detect fail! ret=%d", cam_id, ret);
+                }
+
+                if (frame_count->fetch_add(1) + 1 >= max_frames)
+                {
+                    g_running = false;
+                }
+            });
+        }
     }
-    LOG_INFO("camera: thread exit");
-}
-
-static void draw_results(cv::Mat&                         bgr_img,
-                         const object_detect_result_list* results,
-                         const LabelTools&                label_tools)
-{
-    char text[256];
-    for (int i = 0; i < results->count; i++)
-    {
-        const object_detect_result* det = &(results->results[i]);
-        LOG_INFO("%s @ (%d %d %d %d) %.3f",
-                 label_tools.get_name(det->cls_id),
-                 det->box.left,
-                 det->box.top,
-                 det->box.right,
-                 det->box.bottom,
-                 det->prop);
-
-        cv::rectangle(bgr_img,
-                      cv::Point(det->box.left, det->box.top),
-                      cv::Point(det->box.right, det->box.bottom),
-                      cv::Scalar(255, 0, 0),
-                      3);
-
-        sprintf(text,
-                "%s %.1f%%",
-                label_tools.get_name(det->cls_id),
-                det->prop * 100);
-        cv::putText(bgr_img,
-                    text,
-                    cv::Point(det->box.left, det->box.top - 5),
-                    cv::FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    cv::Scalar(0, 0, 255),
-                    1);
-    }
+    LOG_INFO("camera[%d]: thread exit", cam_id);
 }
 
 int main(int argc, char** argv)
 {
-    if (argc != 3)
+    if (argc != 2)
     {
-        LOG_ERROR("usage: %s <model_path> <image_path>", argv[0]);
+        LOG_ERROR("usage: %s <model_path>", argv[0]);
         return -1;
     }
 
-    const char*          model_path = argv[1];
-    const char*          image_path = argv[2];
+    const char* model_path = argv[1];
+    const char* cameras[]  = {
+        "/dev/mipi_camera_0_main",
+        "/dev/mipi_camera_1_main",
+    };
 
     // Init detector pool (one per NPU core)
-    const rknn_core_mask cores[]    = {
+    const rknn_core_mask cores[] = {
         RKNN_NPU_CORE_0,
         RKNN_NPU_CORE_1,
         RKNN_NPU_CORE_2,
@@ -102,9 +118,9 @@ int main(int argc, char** argv)
     NPULoadMonitor   monitor;
     std::thread      monitor_thread([&monitor] {
         monitor.start(50000);
-    }); // 10ms
+    });
 
-    int              ret = pool.init(model_path, cores, &monitor);
+    int ret = pool.init(model_path, cores, &monitor);
     if (ret != 0)
     {
         LOG_ERROR("pool init fail! ret=%d", ret);
@@ -113,67 +129,34 @@ int main(int argc, char** argv)
         return -1;
     }
 
-    // Camera thread -> FrameBuffer
-    FrameBuffer<cv::Mat> frame_buf;
-    std::thread camera_thread(camera_thread_func, &frame_buf, image_path);
-
-    // Inference loop — async dispatch, don't block on detect
+    // Shared workers container
     std::vector<std::thread> workers;
+    std::mutex               workers_mtx;
     std::atomic<int>         frame_count{0};
     const int                max_frames = 1200;
 
-    while (g_running)
-    {
-        cv::Mat frame;
-        if (!frame_buf.pop(frame))
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-            continue;
-        }
+    // Launch two camera threads — both feed into the same pool
+    std::thread cam0(camera_thread_func,
+                     cameras[0],
+                     0,
+                     &pool,
+                     &label_tools,
+                     &frame_count,
+                     max_frames,
+                     &workers,
+                     &workers_mtx);
+    std::thread cam1(camera_thread_func,
+                     cameras[1],
+                     1,
+                     &pool,
+                     &label_tools,
+                     &frame_count,
+                     max_frames,
+                     &workers,
+                     &workers_mtx);
 
-        // Fire detect asynchronously
-        workers.emplace_back([&pool,
-                              &label_tools,
-                              &frame_count,
-                              max_frames,
-                              frame = std::move(frame)]() mutable {
-            int dev = pool.acquire();
-            auto t1 = getTimeStamp();
-
-            object_detect_result_list results;
-            int ret = -1;
-
-            // BGR -> RGB
-            cv::Mat rgb;
-            cv::cvtColor(frame, rgb, cv::COLOR_BGR2RGB);
-            image_buffer_t img = mat_to_buffer(rgb);
-
-            ret = pool.detector(dev).detect(&img, &results, 0.45, 0.45);
-
-            pool.release_detector(dev);
-            LOG_INFO("detect cost %f ms (core %d)",
-                     (getTimeStamp() - t1) * 1e-3,
-                     dev);
-
-            if (ret == 0)
-            {
-                // cv::Mat draw_img = frame.clone();
-                //
-                // draw_results(draw_img, &results, label_tools);
-                // cv::imwrite("out.png", draw_img);
-                // LOG_INFO("saved out.png");
-            }
-            else
-            {
-                LOG_ERROR("detect fail! ret=%d", ret);
-            }
-
-            if (frame_count.fetch_add(1) + 1 >= max_frames)
-            {
-                g_running = false;
-            }
-        });
-    }
+    cam0.join();
+    cam1.join();
 
     // Wait for all in-flight detections to finish
     for (auto& t : workers)
@@ -183,6 +166,7 @@ int main(int argc, char** argv)
             t.join();
         }
     }
+
     monitor.stop();
     monitor_thread.join();
     pool.release();

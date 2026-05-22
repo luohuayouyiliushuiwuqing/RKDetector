@@ -16,6 +16,7 @@ set(SRCS
         src/RKDetector.cpp
         src/LabelTools.cpp
         src/NPULoadMonitor.cpp
+        src/V4L2Camera.cpp
 )
 
 set(UTILS_LIBS
