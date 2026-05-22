@@ -325,6 +325,7 @@ int get_image_size(image_buffer_t* image)
     default:
         break;
     }
+    return 0;
 }
 
 static int convert_image_rga(image_buffer_t* src_img,
