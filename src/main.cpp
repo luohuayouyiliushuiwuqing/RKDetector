@@ -16,7 +16,6 @@ static std::atomic<bool> g_running{true};
 static void              camera_thread_func(const char*               dev_path,
                                             int                       cam_id,
                                             NPUDevicePool<3>*         pool,
-                                            const LabelTools*         label_tools,
                                             std::atomic<int>*         frame_count,
                                             std::vector<std::thread>* workers,
                                             std::mutex*               workers_mtx)
@@ -46,7 +45,6 @@ static void              camera_thread_func(const char*               dev_path,
         {
             std::lock_guard<std::mutex> lock(*workers_mtx);
             workers->emplace_back([pool,
-                                   label_tools,
                                    frame_count,
                                    cam_id,
                                    nv12_copy,
@@ -107,6 +105,9 @@ int main(int argc, char** argv)
     }
 
     const char* model_path = argv[1];
+
+    const char* label_path = "model/drone.txt";
+
     const char* cameras[]  = {
         "/dev/mipi_camera_0_main",
         "/dev/mipi_camera_1_main",
@@ -119,13 +120,12 @@ int main(int argc, char** argv)
         RKNN_NPU_CORE_2,
     };
     NPUDevicePool<3> pool;
-    LabelTools       label_tools("./model/drone.txt");
     NPULoadMonitor   monitor;
     std::thread      monitor_thread([&monitor] {
         monitor.start(50);
     });
 
-    int              ret = pool.init(model_path, cores, &monitor);
+    int              ret = pool.init(model_path, label_path, cores, &monitor);
     if (ret != 0)
     {
         LOG_ERROR("pool init fail! ret=%d", ret);
@@ -144,7 +144,6 @@ int main(int argc, char** argv)
                      cameras[0],
                      0,
                      &pool,
-                     &label_tools,
                      &frame_count,
                      &workers,
                      &workers_mtx);
@@ -152,7 +151,6 @@ int main(int argc, char** argv)
                      cameras[1],
                      1,
                      &pool,
-                     &label_tools,
                      &frame_count,
                      &workers,
                      &workers_mtx);
@@ -171,7 +169,6 @@ int main(int argc, char** argv)
     monitor.stop();
     monitor_thread.join();
     pool.release();
-    label_tools.release();
 
     return 0;
 }

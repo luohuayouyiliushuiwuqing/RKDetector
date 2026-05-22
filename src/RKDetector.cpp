@@ -5,7 +5,9 @@
 #include <cstdlib>
 #include <cstring>
 
-int RKDetector::init(const char* model_path, rknn_core_mask core_mask)
+int RKDetector::init(const char*    model_path,
+                     const char*    label_path,
+                     rknn_core_mask core_mask)
 {
     int ret = m_rk_scheduler.init(model_path, core_mask);
     if (ret != 0)
@@ -13,6 +15,9 @@ int RKDetector::init(const char* model_path, rknn_core_mask core_mask)
         LOG_ERROR("npu init fail! ret=%d", ret);
         return -1;
     }
+
+    m_label_tools.init(label_path);
+
     return 0;
 }
 
@@ -85,8 +90,9 @@ int RKDetector::detect(const image_buffer_t*      img,
     inputs[0].index = 0;
     inputs[0].type  = RKNN_TENSOR_UINT8;
     inputs[0].fmt   = RKNN_TENSOR_NHWC;
-    inputs[0].size =
-        m_rk_scheduler.model_width() * m_rk_scheduler.model_height() * m_rk_scheduler.model_channel();
+    inputs[0].size  = m_rk_scheduler.model_width() *
+                     m_rk_scheduler.model_height() *
+                     m_rk_scheduler.model_channel();
     inputs[0].buf = dst_img.virt_addr;
 
     // Run NPU

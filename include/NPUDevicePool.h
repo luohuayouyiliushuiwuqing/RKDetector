@@ -39,6 +39,7 @@ class NPUDevicePool
 {
 public:
     int init(const char*           model_path,
+             const char*           label_path,
              const rknn_core_mask* cores,
              NPULoadMonitor*       monitor = nullptr)
     {
@@ -49,7 +50,7 @@ public:
             LOG_INFO("init detector[%d] on core %s",
                      i,
                      cov_rk2_string(cores[i]).c_str());
-            int ret = detectors_[i].init(model_path, cores[i]);
+            int ret = detectors_[i].init(model_path, label_path, cores[i]);
             if (ret != 0)
             {
                 LOG_ERROR("detector[%d] init fail! ret=%d", i, ret);

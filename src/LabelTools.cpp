@@ -72,13 +72,15 @@ static int readLines(const char* fileName, char* lines[], int max_line)
     return i;
 }
 
-LabelTools::LabelTools(const char* label_path)
+void LabelTools::init(const char* label_path)
 {
     label_count_ = readLines(label_path, labels_, MAX_LABEL_LEN);
     if (label_count_ < 0)
     {
         LOG_ERROR("Load %s failed!", label_path);
+        return;
     }
+    return;
 }
 
 LabelTools::~LabelTools()

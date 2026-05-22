@@ -7,7 +7,7 @@
 class LabelTools
 {
 public:
-    LabelTools(const char* label_path);
+    void init(const char* label_path);
     ~LabelTools();
     void  release();
     char* get_name(int cls_id) const;
