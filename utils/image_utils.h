@@ -57,14 +57,14 @@ extern "C"
 */
     int      get_image_size(image_buffer_t* image);
 
-    // uint32_t cvtColor(void*    src,
-    //                   int      src_format,
-    //                   uint64_t src_width,
-    //                   uint64_t src_height,
-    //                   void*    dst,
-    //                   int      dst_format,
-    //                   uint64_t dst_width,
-    //                   uint64_t dst_height);
+    uint32_t cvtColor(void*          src,
+                      image_format_t src_format,
+                      uint64_t       src_width,
+                      uint64_t       src_height,
+                      void*          dst,
+                      image_format_t dst_format,
+                      uint64_t       dst_width,
+                      uint64_t       dst_height);
 
 #ifdef __cplusplus
 } // extern "C"

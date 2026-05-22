@@ -1,8 +1,6 @@
 #include "V4L2Camera.h"
 #include "log.h"
 
-#include <opencv2/imgproc.hpp>
-
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
@@ -78,7 +76,6 @@ bool V4L2Camera::is_opened() const
 
 bool V4L2Camera::init_mmap()
 {
-    // Request buffers
     struct v4l2_requestbuffers req{};
     req.count  = 4;
     req.type   = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
@@ -123,7 +120,7 @@ bool V4L2Camera::init_mmap()
             return false;
         }
 
-        // Re-init for QBUF
+        // Queue buffer
         memset(&plane, 0, sizeof(plane));
         buf.type     = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
         buf.memory   = V4L2_MEMORY_MMAP;
@@ -138,7 +135,6 @@ bool V4L2Camera::init_mmap()
         }
     }
 
-    // Start streaming
     enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
     if (ioctl(fd_, VIDIOC_STREAMON, &type) < 0)
     {
@@ -168,12 +164,11 @@ void V4L2Camera::cleanup()
     buffers_.clear();
 }
 
-bool V4L2Camera::read(cv::Mat& frame)
+bool V4L2Camera::read(V4L2Frame& frame)
 {
     if (fd_ < 0)
         return false;
 
-    // Wait for frame
     fd_set fds;
     struct timeval tv{};
 
@@ -189,7 +184,6 @@ bool V4L2Camera::read(cv::Mat& frame)
         return false;
     }
 
-    // Dequeue
     struct v4l2_plane  plane{};
     struct v4l2_buffer buf{};
     buf.type     = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
@@ -203,10 +197,10 @@ bool V4L2Camera::read(cv::Mat& frame)
         return false;
     }
 
-    // NV12 → BGR
-    // NV12: Y plane (width*height) + interleaved UV plane (width*height/2)
-    cv::Mat nv12(height_ * 3 / 2, width_, CV_8UC1, buffers_[buf.index].start);
-    cv::cvtColor(nv12, frame, cv::COLOR_YUV2BGR_NV12);
+    frame.data   = buffers_[buf.index].start;
+    frame.size   = (uint32_t)plane.bytesused;
+    frame.width  = width_;
+    frame.height = height_;
 
     // Re-queue
     memset(&plane, 0, sizeof(plane));

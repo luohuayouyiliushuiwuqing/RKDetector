@@ -21,6 +21,7 @@ set(SRCS
 
 set(UTILS_LIBS
         imageutils
+        ${LIBRGA}
         ${LIBRKNNRT}
         ${LIBOPENCV}
         dl
@@ -30,6 +31,7 @@ set(UTILS_LIBS
 include_directories(
         ${LIBRKNNRT_INCLUDES}
         ${LIBOPENCV_INCLUDES}
+        ${LIBRGA_INCLUDES}
         ${CMAKE_SOURCE_DIR}
         ${CMAKE_SOURCE_DIR}/include
 )

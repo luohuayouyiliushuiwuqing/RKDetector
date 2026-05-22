@@ -5,7 +5,7 @@ project(rknn_model_zoo_utils)
 add_definitions(-DLIBRGA_IM2D_HANDLE)
 
 add_library(imageutils STATIC
-        image_utils.c
+        image_utils.cpp
 )
 
 target_include_directories(imageutils PUBLIC

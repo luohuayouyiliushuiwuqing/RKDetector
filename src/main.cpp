@@ -3,37 +3,26 @@
 #include "NPULoadMonitor.h"
 #include "V4L2Camera.h"
 #include "include/log.h"
+#include "image_utils.h"
+#include "rga.h"
 
 #include <atomic>
 #include <thread>
-#include <chrono>
 #include <mutex>
 #include <vector>
-
-#include <opencv2/opencv.hpp>
+#include <cstring>
+#include <cstdlib>
 
 static std::atomic<bool> g_running{true};
 
-static image_buffer_t mat_to_buffer(const cv::Mat& mat)
-{
-    image_buffer_t buf;
-    memset(&buf, 0, sizeof(buf));
-    buf.width     = mat.cols;
-    buf.height    = mat.rows;
-    buf.format    = IMAGE_FORMAT_RGB888;
-    buf.virt_addr = mat.data;
-    buf.size      = (int)(mat.total() * mat.elemSize());
-    return buf;
-}
-
-static void camera_thread_func(const char*            dev_path,
-                               int                    cam_id,
-                               NPUDevicePool<3>*      pool,
-                               const LabelTools*      label_tools,
-                               std::atomic<int>*      frame_count,
-                               int                    max_frames,
-                               std::vector<std::thread>* workers,
-                               std::mutex*            workers_mtx)
+static void              camera_thread_func(const char*               dev_path,
+                                            int                       cam_id,
+                                            NPUDevicePool<3>*         pool,
+                                            const LabelTools*         label_tools,
+                                            std::atomic<int>*         frame_count,
+                                            int                       max_frames,
+                                            std::vector<std::thread>* workers,
+                                            std::mutex*               workers_mtx)
 {
     V4L2Camera cap;
     if (!cap.open(dev_path))
@@ -45,15 +34,18 @@ static void camera_thread_func(const char*            dev_path,
 
     while (g_running)
     {
-        cv::Mat frame;
-        if (!cap.read(frame))
+        V4L2Frame nv12;
+        if (!cap.read(nv12))
         {
             LOG_WARN("camera[%d]: read fail, skip", cam_id);
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
             continue;
         }
 
-        // Dispatch detection asynchronously
+        // Copy NV12 data — buffer will be re-queued immediately
+        uint32_t nv12_size = nv12.width * nv12.height * 3 / 2;
+        uint8_t* nv12_copy = (uint8_t*)malloc(nv12_size);
+        memcpy(nv12_copy, nv12.data, nv12_size);
+
         {
             std::lock_guard<std::mutex> lock(*workers_mtx);
             workers->emplace_back([pool,
@@ -61,22 +53,44 @@ static void camera_thread_func(const char*            dev_path,
                                    frame_count,
                                    max_frames,
                                    cam_id,
-                                   frame = std::move(frame)]() mutable {
-                int dev = pool->acquire();
-                auto t1 = getTimeStamp();
+                                   nv12_copy,
+                                   nv12_size,
+                                   w = nv12.width,
+                                   h = nv12.height]() {
+                int      dev      = pool->acquire();
+                auto     t1       = getTimeStamp();
 
-                cv::Mat rgb;
-                cv::cvtColor(frame, rgb, cv::COLOR_BGR2RGB);
-                image_buffer_t img = mat_to_buffer(rgb);
+                // RGA hardware: NV12 → RGB888
+                uint32_t rgb_size = w * h * 3;
+                uint8_t* rgb_buf  = (uint8_t*)malloc(rgb_size);
+                cvtColor(nv12_copy,
+                         IMAGE_FORMAT_YUV420SP_NV12,
+                         w,
+                         h,
+                         rgb_buf,
+                         IMAGE_FORMAT_RGB888,
+                         w,
+                         h);
+
+                image_buffer_t img{};
+                img.width     = w;
+                img.height    = h;
+                img.format    = IMAGE_FORMAT_RGB888;
+                img.virt_addr = rgb_buf;
+                img.size      = rgb_size;
 
                 object_detect_result_list results;
-                int ret = pool->detector(dev).detect(&img, &results, 0.45, 0.45);
+                int                       ret =
+                    pool->detector(dev).detect(&img, &results, 0.45, 0.45);
 
                 pool->release_detector(dev);
                 LOG_INFO("cam[%d] detect cost %.1f ms (core %d)",
                          cam_id,
                          (getTimeStamp() - t1) * 1e-3,
                          dev);
+
+                free(rgb_buf);
+                free(nv12_copy);
 
                 if (ret != 0)
                 {
@@ -120,7 +134,7 @@ int main(int argc, char** argv)
         monitor.start(50000);
     });
 
-    int ret = pool.init(model_path, cores, &monitor);
+    int              ret = pool.init(model_path, cores, &monitor);
     if (ret != 0)
     {
         LOG_ERROR("pool init fail! ret=%d", ret);
@@ -136,7 +150,7 @@ int main(int argc, char** argv)
     const int                max_frames = 1200;
 
     // Launch two camera threads — both feed into the same pool
-    std::thread cam0(camera_thread_func,
+    std::thread              cam0(camera_thread_func,
                      cameras[0],
                      0,
                      &pool,
@@ -145,7 +159,7 @@ int main(int argc, char** argv)
                      max_frames,
                      &workers,
                      &workers_mtx);
-    std::thread cam1(camera_thread_func,
+    std::thread              cam1(camera_thread_func,
                      cameras[1],
                      1,
                      &pool,
@@ -158,7 +172,6 @@ int main(int argc, char** argv)
     cam0.join();
     cam1.join();
 
-    // Wait for all in-flight detections to finish
     for (auto& t : workers)
     {
         if (t.joinable())

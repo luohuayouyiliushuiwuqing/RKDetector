@@ -2,8 +2,17 @@
 #define _V4L2_CAMERA_H_
 
 #include <linux/videodev2.h>
-#include <opencv2/core/mat.hpp>
+#include <cstddef>
+#include <cstdint>
 #include <vector>
+
+struct V4L2Frame
+{
+    void*    data;
+    uint32_t size;
+    uint32_t width;
+    uint32_t height;
+};
 
 class V4L2Camera
 {
@@ -19,8 +28,8 @@ public:
     void close();
     bool is_opened() const;
 
-    // Grab one frame into a cv::Mat (BGR). Blocks until frame available.
-    bool read(cv::Mat& frame);
+    // Grab one NV12 frame. Blocks until frame available.
+    bool read(V4L2Frame& frame);
 
 private:
     struct Buffer
@@ -33,8 +42,8 @@ private:
     void cleanup();
 
     int                  fd_{-1};
-    int                  width_{0};
-    int                  height_{0};
+    uint32_t             width_{0};
+    uint32_t             height_{0};
     std::vector<Buffer>  buffers_;
 };
 
