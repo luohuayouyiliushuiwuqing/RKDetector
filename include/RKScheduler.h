@@ -13,7 +13,7 @@ enum class ModelType
     V26
 };
 
-class NPUScheduler
+class RKScheduler
 {
 public:
     int               init(const char*    model_path,
@@ -40,6 +40,19 @@ public:
     int               n_output() const;
 
 private:
+    typedef struct
+    {
+        rknn_context          rknn_ctx;
+        rknn_input_output_num io_num;
+        rknn_tensor_attr*     input_attrs;
+        rknn_tensor_attr*     output_attrs;
+        int                   model_channel;
+        int                   model_width;
+        int                   model_height;
+        int                   obj_class_num;
+        bool                  is_quant;
+    } rknn_app_context_t;
+
     rknn_app_context_t ctx_{};
     ModelType          type_{ModelType::V8};
 

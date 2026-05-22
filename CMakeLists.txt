@@ -12,7 +12,7 @@ find_package(Threads REQUIRED)
 
 set(SRCS
         src/main.cpp
-        src/NPUScheduler.cpp
+        src/RKScheduler.cpp
         src/RKDetector.cpp
         src/LabelTools.cpp
         src/NPULoadMonitor.cpp

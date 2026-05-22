@@ -4,14 +4,12 @@
 #include "V4L2Camera.h"
 #include "include/log.h"
 #include "image_utils.h"
-#include "rga.h"
 
 #include <atomic>
 #include <thread>
 #include <mutex>
 #include <vector>
 #include <cstring>
-#include <cstdlib>
 
 static std::atomic<bool> g_running{true};
 
@@ -20,7 +18,6 @@ static void              camera_thread_func(const char*               dev_path,
                                             NPUDevicePool<3>*         pool,
                                             const LabelTools*         label_tools,
                                             std::atomic<int>*         frame_count,
-                                            int                       max_frames,
                                             std::vector<std::thread>* workers,
                                             std::mutex*               workers_mtx)
 {
@@ -51,7 +48,6 @@ static void              camera_thread_func(const char*               dev_path,
             workers->emplace_back([pool,
                                    label_tools,
                                    frame_count,
-                                   max_frames,
                                    cam_id,
                                    nv12_copy,
                                    nv12_size,
@@ -95,11 +91,6 @@ static void              camera_thread_func(const char*               dev_path,
                 if (ret != 0)
                 {
                     LOG_ERROR("cam[%d] detect fail! ret=%d", cam_id, ret);
-                }
-
-                if (frame_count->fetch_add(1) + 1 >= max_frames)
-                {
-                    g_running = false;
                 }
             });
         }
@@ -147,7 +138,6 @@ int main(int argc, char** argv)
     std::vector<std::thread> workers;
     std::mutex               workers_mtx;
     std::atomic<int>         frame_count{0};
-    const int                max_frames = 1200;
 
     // Launch two camera threads — both feed into the same pool
     std::thread              cam0(camera_thread_func,
@@ -156,7 +146,6 @@ int main(int argc, char** argv)
                      &pool,
                      &label_tools,
                      &frame_count,
-                     max_frames,
                      &workers,
                      &workers_mtx);
     std::thread              cam1(camera_thread_func,
@@ -165,7 +154,6 @@ int main(int argc, char** argv)
                      &pool,
                      &label_tools,
                      &frame_count,
-                     max_frames,
                      &workers,
                      &workers_mtx);
 

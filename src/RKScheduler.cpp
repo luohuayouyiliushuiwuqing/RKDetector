@@ -1,4 +1,4 @@
-#include "NPUScheduler.h"
+#include "RKScheduler.h"
 #include "../include/log.h"
 
 #include <math.h>
@@ -172,10 +172,10 @@ static int quick_sort_indice_inverse(std::vector<float>& input,
 }
 
 // ---------------------------------------------------------------------------
-// NPUScheduler — init / release / infer
+// RKScheduler — init / release / infer
 // ---------------------------------------------------------------------------
 
-int NPUScheduler::init(const char* model_path, rknn_core_mask core_mask)
+int RKScheduler::init(const char* model_path, rknn_core_mask core_mask)
 {
     int          ret;
     rknn_context ctx = 0;
@@ -316,7 +316,7 @@ int NPUScheduler::init(const char* model_path, rknn_core_mask core_mask)
     return 0;
 }
 
-void NPUScheduler::release()
+void RKScheduler::release()
 {
     if (ctx_.input_attrs != NULL)
     {
@@ -335,7 +335,7 @@ void NPUScheduler::release()
     }
 }
 
-int NPUScheduler::infer(rknn_input* inputs, rknn_output* outputs)
+int RKScheduler::infer(rknn_input* inputs, rknn_output* outputs)
 {
     auto t0  = getTimeStamp();
     int  ret = rknn_inputs_set(ctx_.rknn_ctx, ctx_.io_num.n_input, inputs);
@@ -374,7 +374,7 @@ int NPUScheduler::infer(rknn_input* inputs, rknn_output* outputs)
     return 0;
 }
 
-void NPUScheduler::releaseOutputs(rknn_output* outputs, int n_output)
+void RKScheduler::releaseOutputs(rknn_output* outputs, int n_output)
 {
     rknn_outputs_release(ctx_.rknn_ctx, n_output, outputs);
 }
@@ -383,7 +383,7 @@ void NPUScheduler::releaseOutputs(rknn_output* outputs, int n_output)
 // YOLOv8 postprocess helpers
 // ---------------------------------------------------------------------------
 
-int NPUScheduler::v8_process_i8(rknn_output*        outputs,
+int RKScheduler::v8_process_i8(rknn_output*        outputs,
                                 std::vector<float>& boxes,
                                 std::vector<float>& objProbs,
                                 std::vector<int>&   classId,
@@ -486,7 +486,7 @@ int NPUScheduler::v8_process_i8(rknn_output*        outputs,
     return validCount;
 }
 
-int NPUScheduler::v8_process_fp32(rknn_output*        outputs,
+int RKScheduler::v8_process_fp32(rknn_output*        outputs,
                                   std::vector<float>& boxes,
                                   std::vector<float>& objProbs,
                                   std::vector<int>&   classId,
@@ -577,7 +577,7 @@ int NPUScheduler::v8_process_fp32(rknn_output*        outputs,
 // Unified post_process
 // ---------------------------------------------------------------------------
 
-int NPUScheduler::post_process(rknn_output*               outputs,
+int RKScheduler::post_process(rknn_output*               outputs,
                                const letterbox_t*         letter_box,
                                float                      conf_threshold,
                                float                      nms_threshold,
@@ -668,52 +668,52 @@ int NPUScheduler::post_process(rknn_output*               outputs,
 // Metadata accessors
 // ---------------------------------------------------------------------------
 
-int NPUScheduler::model_width() const
+int RKScheduler::model_width() const
 {
     return ctx_.model_width;
 }
 
-int NPUScheduler::model_height() const
+int RKScheduler::model_height() const
 {
     return ctx_.model_height;
 }
 
-int NPUScheduler::model_channel() const
+int RKScheduler::model_channel() const
 {
     return ctx_.model_channel;
 }
 
-int NPUScheduler::obj_class_num() const
+int RKScheduler::obj_class_num() const
 {
     return ctx_.obj_class_num;
 }
 
-bool NPUScheduler::is_quant() const
+bool RKScheduler::is_quant() const
 {
     return ctx_.is_quant;
 }
 
-ModelType NPUScheduler::model_type() const
+ModelType RKScheduler::model_type() const
 {
     return type_;
 }
 
-rknn_tensor_attr* NPUScheduler::input_attrs() const
+rknn_tensor_attr* RKScheduler::input_attrs() const
 {
     return ctx_.input_attrs;
 }
 
-rknn_tensor_attr* NPUScheduler::output_attrs() const
+rknn_tensor_attr* RKScheduler::output_attrs() const
 {
     return ctx_.output_attrs;
 }
 
-int NPUScheduler::n_input() const
+int RKScheduler::n_input() const
 {
     return ctx_.io_num.n_input;
 }
 
-int NPUScheduler::n_output() const
+int RKScheduler::n_output() const
 {
     return ctx_.io_num.n_output;
 }

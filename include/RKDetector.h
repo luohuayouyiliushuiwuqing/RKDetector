@@ -1,7 +1,7 @@
 #ifndef _RK_DETECTOR_H_
 #define _RK_DETECTOR_H_
 
-#include "NPUScheduler.h"
+#include "RKScheduler.h"
 #include "common.h"
 #include "RkType.h"
 
@@ -16,7 +16,7 @@ public:
                 float                      nms_threshold);
 
 private:
-    NPUScheduler npu_;
+    RKScheduler npu_;
 };
 
 #endif /* _RK_DETECTOR_H_ */
