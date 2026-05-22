@@ -3,13 +3,9 @@
 
 #include <atomic>
 #include <fstream>
+#include <map>
 #include <mutex>
 #include <string>
-
-struct NpuLoadInfo
-{
-    int load[3] = {0, 0, 0};
-};
 
 class NPULoadMonitor
 {
@@ -17,22 +13,19 @@ public:
     explicit NPULoadMonitor(
         const std::string& path = "/sys/kernel/debug/rknpu/load");
 
-    void start(int interval_us = 10000);
+    void start(int interval_ms = 10000);
     void stop();
 
-    NpuLoadInfo get_info();
-    int         get_core_load(int core);
+    int  get_core_load(int core);
 
 private:
-    bool open_file();
-    bool read_load(NpuLoadInfo& info);
+    bool               read_load();
 
-    std::string       file_path_;
-    std::ifstream     file_;
-    std::atomic<bool> running_{false};
+    std::ifstream      m_file;
+    std::atomic<bool>  m_running{};
+    std::mutex         mtx_;
 
-    std::mutex    mtx_;
-    NpuLoadInfo   current_;
+    std::map<int, int> m_load_map;
 };
 
 #endif // RKDETECTOR_NPULOADMONITOR_H

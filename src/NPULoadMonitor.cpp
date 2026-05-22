@@ -1,45 +1,38 @@
 #include "NPULoadMonitor.h"
-#include "../include/log.h"
+#include "log.h"
 
 #include <chrono>
 #include <thread>
 
 NPULoadMonitor::NPULoadMonitor(const std::string& path)
-: file_path_(path)
-, running_(false)
 {
+    m_file.open(path);
+    if (!m_file.is_open())
+    {
+        LOG_DEBUG("Failed to open %s. Try sudo or check debugfs.",
+                  path.c_str());
+        m_running = false;
+    }
+    m_running = true;
 }
 
-void NPULoadMonitor::start(int interval_us)
+void NPULoadMonitor::start(int interval_ms)
 {
-    if (!open_file())
+    while (m_running)
     {
-        return;
-    }
-
-    running_ = true;
-    while (running_)
-    {
-        NpuLoadInfo info;
-        if (read_load(info))
+        if (read_load())
         {
             std::lock_guard<std::mutex> lock(mtx_);
-            current_ = info;
         }
-        std::this_thread::sleep_for(std::chrono::microseconds(interval_us));
+        std::this_thread::sleep_for(
+            std::chrono::microseconds(interval_ms * 1000));
     }
-    file_.close();
+    m_file.close();
 }
 
 void NPULoadMonitor::stop()
 {
-    running_ = false;
-}
-
-NpuLoadInfo NPULoadMonitor::get_info()
-{
-    std::lock_guard<std::mutex> lock(mtx_);
-    return current_;
+    m_running = false;
 }
 
 int NPULoadMonitor::get_core_load(int core)
@@ -49,33 +42,21 @@ int NPULoadMonitor::get_core_load(int core)
         return 0;
     }
     std::lock_guard<std::mutex> lock(mtx_);
-    return current_.load[core];
+
+    return m_load_map[core];
 }
 
-bool NPULoadMonitor::open_file()
+bool NPULoadMonitor::read_load()
 {
-    file_.open(file_path_);
-    if (!file_.is_open())
-    {
-        LOG_DEBUG(
-            "Failed to open %s. Try sudo or check debugfs.",
-            file_path_.c_str());
-        return false;
-    }
-    return true;
-}
-
-bool NPULoadMonitor::read_load(NpuLoadInfo& info)
-{
-    if (!file_.is_open())
+    if (!m_file.is_open())
     {
         return false;
     }
 
-    file_.clear();
-    file_.seekg(0, std::ios::beg);
+    m_file.clear();
+    m_file.seekg(0, std::ios::beg);
     std::string line;
-    if (!std::getline(file_, line))
+    if (!std::getline(m_file, line))
     {
         return false;
     }
@@ -112,7 +93,7 @@ bool NPULoadMonitor::read_load(NpuLoadInfo& info)
 
     for (int i = 0; i < count && i < 3; i++)
     {
-        info.load[i] = vals[i];
+        m_load_map[i] = vals[i];
     }
     return true;
 }
