@@ -49,7 +49,7 @@ bool V4L2Camera::open(const char* device,
     // Driver may adjust width/height
     width_  = fmt.fmt.pix_mp.width;
     height_ = fmt.fmt.pix_mp.height;
-    LOG_INFO("V4L2: %s opened, %dx%d NV12", device, width_, height_);
+    LOG_DEBUG("V4L2: %s opened, %dx%d NV12", device, width_, height_);
 
     // Set frame rate
     struct v4l2_streamparm parm{};
@@ -144,7 +144,7 @@ bool V4L2Camera::init_mmap()
         return false;
     }
 
-    LOG_INFO("V4L2: streaming started (%zu buffers)", buffers_.size());
+    LOG_DEBUG("V4L2: streaming started (%zu buffers)", buffers_.size());
     return true;
 }
 

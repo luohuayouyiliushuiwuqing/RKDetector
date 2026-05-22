@@ -1,6 +1,7 @@
 #include "rkdetector/RKScheduler.h"
 #include "rkdetector/log.h"
 
+#include <atomic>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -177,6 +178,8 @@ static int quick_sort_indice_inverse(std::vector<float>& input,
 // RKScheduler — init / release / infer
 // ---------------------------------------------------------------------------
 
+static std::atomic_bool is_debug{false};
+
 int RKScheduler::init(const char* model_path, rknn_core_mask core_mask)
 {
     int          ret;
@@ -203,9 +206,14 @@ int RKScheduler::init(const char* model_path, rknn_core_mask core_mask)
         LOG_ERROR("rknn query version failed");
         return -1;
     }
-    LOG_INFO("sdk api version: %s driver version: %s",
-             version.api_version,
-             version.drv_version);
+
+    if (is_debug.load() == false)
+    {
+        LOG_INFO("sdk api version: %s driver version: %s",
+                 version.api_version,
+                 version.drv_version);
+        is_debug.store(true);
+    }
 
     rknn_input_output_num io_num;
     ret = rknn_query(ctx, RKNN_QUERY_IN_OUT_NUM, &io_num, sizeof(io_num));
