@@ -1,7 +1,7 @@
 #ifndef RKNN_YOLOV8_DEMO_RKTYPE_H
 #define RKNN_YOLOV8_DEMO_RKTYPE_H
 
-#include "common.h"
+#include "rk_common.h"
 #include "rknn_api.h"
 
 #include <thread>

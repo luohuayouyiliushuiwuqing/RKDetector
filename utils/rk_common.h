@@ -1,5 +1,5 @@
-#ifndef _RKNN_MODEL_ZOO_COMMON_H_
-#define _RKNN_MODEL_ZOO_COMMON_H_
+#ifndef _RKDETECTOR_RK_COMMON_H_
+#define _RKDETECTOR_RK_COMMON_H_
 
 /**
  * @brief Image pixel format
@@ -42,4 +42,4 @@ typedef struct
     int bottom;
 } image_rect_t;
 
-#endif //_RKNN_MODEL_ZOO_COMMON_H_
+#endif // _RKDETECTOR_RK_COMMON_H_

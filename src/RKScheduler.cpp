@@ -1,5 +1,5 @@
-#include "RKScheduler.h"
-#include "../include/log.h"
+#include "rkdetector/RKScheduler.h"
+#include "rkdetector/log.h"
 
 #include <math.h>
 #include <stdio.h>

@@ -1,12 +1,12 @@
-#ifndef _RKNN_MODEL_ZOO_IMAGE_UTILS_H_
-#define _RKNN_MODEL_ZOO_IMAGE_UTILS_H_
+#ifndef _RKDETECTOR_RK_IMAGE_UTILS_H_
+#define _RKDETECTOR_RK_IMAGE_UTILS_H_
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-#include "common.h"
+#include "rk_common.h"
 
     /**
  * @brief LetterBox
@@ -70,4 +70,4 @@ extern "C"
 } // extern "C"
 #endif
 
-#endif // _RKNN_MODEL_ZOO_IMAGE_UTILS_H_
+#endif // _RKDETECTOR_RK_IMAGE_UTILS_H_

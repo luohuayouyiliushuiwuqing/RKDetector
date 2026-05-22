@@ -1,9 +1,9 @@
-#ifndef _NPU_DEVICE_POOL_H_
-#define _NPU_DEVICE_POOL_H_
+#ifndef _RKDETECTOR_NPU_DEVICE_POOL_H_
+#define _RKDETECTOR_NPU_DEVICE_POOL_H_
 
-#include "RKDetector.h"
-#include "NPULoadMonitor.h"
-#include "log.h"
+#include "rkdetector/RKDetector.h"
+#include "rkdetector/NPULoadMonitor.h"
+#include "rkdetector/log.h"
 
 #include <array>
 #include <condition_variable>
@@ -222,4 +222,4 @@ private:
     std::condition_variable   cv_;
 };
 
-#endif /* _NPU_DEVICE_POOL_H_ */
+#endif /* _RKDETECTOR_NPU_DEVICE_POOL_H_ */

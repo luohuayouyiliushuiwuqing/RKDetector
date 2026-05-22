@@ -1,9 +1,8 @@
-#include "NPUDevicePool.h"
-#include "LabelTools.h"
-#include "NPULoadMonitor.h"
-#include "V4L2Camera.h"
-#include "include/log.h"
-#include "image_utils.h"
+#include "rkdetector/NPUDevicePool.h"
+#include "rkdetector/NPULoadMonitor.h"
+#include "rkdetector/V4L2Camera.h"
+#include "rkdetector/log.h"
+#include "rk_image_utils.h"
 
 #include <atomic>
 #include <thread>

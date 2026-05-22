@@ -5,7 +5,7 @@
 
 #include "im2d.h"
 #include "drmrga.h"
-#include "image_utils.h"
+#include "rk_image_utils.h"
 #include "RgaUtils.h"
 
 static int crop_and_scale_image_c(int            channel,

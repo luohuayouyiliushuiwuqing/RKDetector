@@ -1,5 +1,5 @@
-#ifndef _RK_LOG_H_
-#define _RK_LOG_H_
+#ifndef _RKDETECTOR_LOG_H_
+#define _RKDETECTOR_LOG_H_
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -132,4 +132,4 @@ __attribute__((format(printf, 4, 5))) static inline void log_log(
 #define LOG_INFO(...)  log_log(LOG_LVL_INFO, __FILE__, __LINE__, __VA_ARGS__)
 #define LOG_DEBUG(...) log_log(LOG_LVL_DEBUG, __FILE__, __LINE__, __VA_ARGS__)
 
-#endif /* _RK_LOG_H_ */
+#endif /* _RKDETECTOR_LOG_H_ */

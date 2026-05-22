@@ -1,5 +1,5 @@
-#ifndef _V4L2_CAMERA_H_
-#define _V4L2_CAMERA_H_
+#ifndef _RKDETECTOR_V4L2_CAMERA_H_
+#define _RKDETECTOR_V4L2_CAMERA_H_
 
 #include <linux/videodev2.h>
 #include <cstddef>
@@ -47,4 +47,4 @@ private:
     std::vector<Buffer>  buffers_;
 };
 
-#endif /* _V4L2_CAMERA_H_ */
+#endif /* _RKDETECTOR_V4L2_CAMERA_H_ */

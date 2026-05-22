@@ -1,6 +1,6 @@
-#include "LabelTools.h"
+#include "rkdetector/LabelTools.h"
 
-#include "../include/log.h"
+#include "rkdetector/log.h"
 
 #include <cstdio>
 #include <cstdlib>

@@ -1,5 +1,5 @@
-#include "V4L2Camera.h"
-#include "log.h"
+#include "rkdetector/V4L2Camera.h"
+#include "rkdetector/log.h"
 
 #include <cerrno>
 #include <cstring>

@@ -1,10 +1,10 @@
-#ifndef _RK_DETECTOR_H_
-#define _RK_DETECTOR_H_
+#ifndef _RKDETECTOR_RK_DETECTOR_H_
+#define _RKDETECTOR_RK_DETECTOR_H_
 
-#include "LabelTools.h"
-#include "RKScheduler.h"
-#include "common.h"
-#include "RkType.h"
+#include "rkdetector/LabelTools.h"
+#include "rkdetector/RKScheduler.h"
+#include "rk_common.h"
+#include "rkdetector/RkType.h"
 
 class RKDetector
 {
@@ -23,4 +23,4 @@ private:
     LabelTools  m_label_tools;
 };
 
-#endif /* _RK_DETECTOR_H_ */
+#endif /* _RKDETECTOR_RK_DETECTOR_H_ */

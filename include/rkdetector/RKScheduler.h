@@ -1,8 +1,8 @@
-#ifndef _NPU_SCHEDULER_H_
-#define _NPU_SCHEDULER_H_
+#ifndef _RKDETECTOR_RK_SCHEDULER_H_
+#define _RKDETECTOR_RK_SCHEDULER_H_
 
-#include "RkType.h"
-#include "image_utils.h"
+#include "rkdetector/RkType.h"
+#include "rk_image_utils.h"
 
 #include <vector>
 
@@ -69,4 +69,4 @@ private:
                                        float               threshold);
 };
 
-#endif /* _NPU_SCHEDULER_H_ */
+#endif /* _RKDETECTOR_RK_SCHEDULER_H_ */

@@ -1,5 +1,5 @@
-#include "NPULoadMonitor.h"
-#include "log.h"
+#include "rkdetector/NPULoadMonitor.h"
+#include "rkdetector/log.h"
 
 #include <chrono>
 #include <thread>

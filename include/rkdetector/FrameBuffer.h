@@ -1,5 +1,5 @@
-#ifndef _FRAME_BUFFER_H_
-#define _FRAME_BUFFER_H_
+#ifndef _RKDETECTOR_FRAME_BUFFER_H_
+#define _RKDETECTOR_FRAME_BUFFER_H_
 
 #include <mutex>
 
@@ -32,4 +32,4 @@ private:
     mutable std::mutex mtx_;
 };
 
-#endif /* _FRAME_BUFFER_H_ */
+#endif /* _RKDETECTOR_FRAME_BUFFER_H_ */
