@@ -1,13 +1,13 @@
 #include "RKDetector.h"
 #include "image_utils.h"
-#include "../include/log.h"
+#include "log.h"
 
-#include <stdlib.h>
-#include <string.h>
+#include <cstdlib>
+#include <cstring>
 
 int RKDetector::init(const char* model_path, rknn_core_mask core_mask)
 {
-    int ret = npu_.init(model_path, core_mask);
+    int ret = m_rk_scheduler.init(model_path, core_mask);
     if (ret != 0)
     {
         LOG_ERROR("npu init fail! ret=%d", ret);
@@ -18,7 +18,7 @@ int RKDetector::init(const char* model_path, rknn_core_mask core_mask)
 
 void RKDetector::release()
 {
-    npu_.release();
+    m_rk_scheduler.release();
 }
 
 int RKDetector::detect(const image_buffer_t*      img,
@@ -29,8 +29,8 @@ int RKDetector::detect(const image_buffer_t*      img,
     int            ret;
     image_buffer_t dst_img;
     letterbox_t    letter_box;
-    rknn_input     inputs[npu_.n_input()];
-    rknn_output    outputs[npu_.n_output()];
+    rknn_input     inputs[m_rk_scheduler.n_input()];
+    rknn_output    outputs[m_rk_scheduler.n_output()];
 
     if ((!img) || (!results))
     {
@@ -48,8 +48,8 @@ int RKDetector::detect(const image_buffer_t*      img,
     letter_box.y_pad  = 0;
 
     // Pre Process
-    dst_img.width     = npu_.model_width();
-    dst_img.height    = npu_.model_height();
+    dst_img.width     = m_rk_scheduler.model_width();
+    dst_img.height    = m_rk_scheduler.model_height();
     dst_img.format    = IMAGE_FORMAT_RGB888;
     dst_img.size      = get_image_size(&dst_img);
     dst_img.virt_addr = nullptr;
@@ -86,18 +86,18 @@ int RKDetector::detect(const image_buffer_t*      img,
     inputs[0].type  = RKNN_TENSOR_UINT8;
     inputs[0].fmt   = RKNN_TENSOR_NHWC;
     inputs[0].size =
-        npu_.model_width() * npu_.model_height() * npu_.model_channel();
+        m_rk_scheduler.model_width() * m_rk_scheduler.model_height() * m_rk_scheduler.model_channel();
     inputs[0].buf = dst_img.virt_addr;
 
     // Run NPU
     memset(outputs, 0, sizeof(outputs));
-    for (int i = 0; i < npu_.n_output(); i++)
+    for (int i = 0; i < m_rk_scheduler.n_output(); i++)
     {
         outputs[i].index      = i;
-        outputs[i].want_float = (!npu_.is_quant());
+        outputs[i].want_float = (!m_rk_scheduler.is_quant());
     }
 
-    ret = npu_.infer(inputs, outputs);
+    ret = m_rk_scheduler.infer(inputs, outputs);
     if (ret < 0)
     {
         LOG_ERROR("npu infer fail! ret=%d", ret);
@@ -108,10 +108,10 @@ int RKDetector::detect(const image_buffer_t*      img,
         return -1;
     }
 
-    npu_.post_process(
+    m_rk_scheduler.post_process(
         outputs, &letter_box, conf_threshold, nms_threshold, results);
 
-    npu_.releaseOutputs(outputs, npu_.n_output());
+    m_rk_scheduler.releaseOutputs(outputs, m_rk_scheduler.n_output());
 
     if (need_free_dst)
     {

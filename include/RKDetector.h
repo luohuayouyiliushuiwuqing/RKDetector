@@ -16,7 +16,7 @@ public:
                 float                      nms_threshold);
 
 private:
-    RKScheduler npu_;
+    RKScheduler m_rk_scheduler;
 };
 
 #endif /* _RK_DETECTOR_H_ */
