@@ -8,6 +8,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+using namespace rkdet;
+
 V4L2Camera::V4L2Camera() = default;
 
 V4L2Camera::~V4L2Camera()

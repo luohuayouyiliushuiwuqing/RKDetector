@@ -4,6 +4,8 @@
 
 #define MAX_LABEL_LEN 128
 
+namespace rkdet {
+
 class LabelTools
 {
 public:
@@ -17,5 +19,7 @@ private:
     char* labels_[MAX_LABEL_LEN]{};
     int   label_count_{};
 };
+
+} // namespace rkdet
 
 #endif //RKDETECTORLABELTOOLS_H

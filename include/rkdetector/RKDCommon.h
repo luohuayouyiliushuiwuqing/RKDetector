@@ -2,6 +2,8 @@
 #define RKDETECTOR_RKDCOMMON_H
 #include <string>
 
+namespace rkdet {
+
 template <typename T>
 struct RD_BoxLRTB
 {
@@ -29,5 +31,7 @@ struct RD_ObjectBox
     RD_BoxLRTB_I_T rd_box_lrtb_int;
     RD_BoxXYWH_I_T rd_box_xywh_int;
 };
+
+} // namespace rkdet
 
 #endif //RKDETECTOR_RKDCOMMON_H

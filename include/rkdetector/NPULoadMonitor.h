@@ -7,6 +7,9 @@
 #include <mutex>
 #include <string>
 
+namespace rkdet
+{
+
 class NPULoadMonitor
 {
 public:
@@ -27,5 +30,7 @@ private:
 
     std::map<int, int> m_load_map;
 };
+
+} // namespace rkdet
 
 #endif // RKDETECTOR_NPULOADMONITOR_H

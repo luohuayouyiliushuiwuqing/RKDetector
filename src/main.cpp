@@ -10,6 +10,8 @@
 #include <vector>
 #include <cstring>
 
+using namespace rkdet;
+
 static std::atomic<bool> g_running{true};
 
 static void              camera_thread_func(const char*               dev_path,

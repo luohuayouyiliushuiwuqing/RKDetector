@@ -3,6 +3,8 @@
 
 #include <mutex>
 
+namespace rkdet {
+
 template<typename T>
 class FrameBuffer
 {
@@ -31,5 +33,7 @@ private:
     bool            ready_{false};
     mutable std::mutex mtx_;
 };
+
+} // namespace rkdet
 
 #endif /* _RKDETECTOR_FRAME_BUFFER_H_ */

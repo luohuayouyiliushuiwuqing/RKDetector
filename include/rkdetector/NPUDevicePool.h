@@ -9,6 +9,9 @@
 #include <condition_variable>
 #include <mutex>
 
+namespace rkdet
+{
+
 inline std::string cov_rk2_string(rknn_core_mask core_mask)
 {
     switch (core_mask)
@@ -221,5 +224,7 @@ private:
     std::mutex                mtx_;
     std::condition_variable   cv_;
 };
+
+} // namespace rkdet
 
 #endif /* _RKDETECTOR_NPU_DEVICE_POOL_H_ */

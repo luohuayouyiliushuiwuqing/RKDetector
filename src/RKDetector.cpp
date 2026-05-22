@@ -5,6 +5,8 @@
 #include <cstdlib>
 #include <cstring>
 
+using namespace rkdet;
+
 int RKDetector::init(const char*    model_path,
                      const char*    label_path,
                      rknn_core_mask core_mask)

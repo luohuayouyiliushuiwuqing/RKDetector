@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <vector>
 
+namespace rkdet {
+
 struct V4L2Frame
 {
     void*    data;
@@ -46,5 +48,7 @@ private:
     uint32_t             height_{0};
     std::vector<Buffer>  buffers_;
 };
+
+} // namespace rkdet
 
 #endif /* _RKDETECTOR_V4L2_CAMERA_H_ */

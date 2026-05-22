@@ -4,6 +4,8 @@
 #include <chrono>
 #include <thread>
 
+using namespace rkdet;
+
 NPULoadMonitor::NPULoadMonitor(const std::string& path)
 {
     m_file.open(path);

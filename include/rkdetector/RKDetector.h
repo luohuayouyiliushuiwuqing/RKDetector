@@ -6,6 +6,9 @@
 #include "rk_common.h"
 #include "rkdetector/RkType.h"
 
+namespace rkdet
+{
+
 class RKDetector
 {
 public:
@@ -22,5 +25,7 @@ private:
     RKScheduler m_rk_scheduler;
     LabelTools  m_label_tools;
 };
+
+} // namespace rkdet
 
 #endif /* _RKDETECTOR_RK_DETECTOR_H_ */

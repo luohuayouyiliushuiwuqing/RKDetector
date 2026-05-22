@@ -6,6 +6,9 @@
 
 #include <vector>
 
+namespace rkdet
+{
+
 enum class ModelType
 {
     V5,
@@ -68,5 +71,7 @@ private:
                                        std::vector<int>&   classId,
                                        float               threshold);
 };
+
+} // namespace rkdet
 
 #endif /* _RKDETECTOR_RK_SCHEDULER_H_ */

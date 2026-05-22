@@ -9,6 +9,8 @@
 
 #define OBJ_NUMB_MAX_SIZE 128
 
+namespace rkdet {
+
 typedef struct
 {
     image_rect_t box;
@@ -29,4 +31,7 @@ static uint64_t getTimeStamp()
     gettimeofday(&tv, nullptr);
     return tv.tv_sec * 1000000 + tv.tv_usec;
 }
+
+} // namespace rkdet
+
 #endif //RKNN_YOLOV8_DEMO_RKTYPE_H
