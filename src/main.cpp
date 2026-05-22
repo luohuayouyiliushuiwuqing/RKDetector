@@ -79,8 +79,9 @@ static void              camera_thread_func(const char*               dev_path,
                     pool->detector(dev).detect(&img, &results, 0.45, 0.45);
 
                 pool->release_detector(dev);
-                LOG_INFO("cam[%d] detect cost %.1f ms (core %d)",
+                LOG_INFO("cam[%d] frame[%d] detect cost %.1f ms (core %d)",
                          cam_id,
+                         frame_count->load(),
                          (getTimeStamp() - t1) * 1e-3,
                          dev);
 
@@ -91,6 +92,8 @@ static void              camera_thread_func(const char*               dev_path,
                 {
                     LOG_ERROR("cam[%d] detect fail! ret=%d", cam_id, ret);
                 }
+
+                frame_count->fetch_add(1);
             });
         }
     }

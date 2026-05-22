@@ -1,5 +1,5 @@
-#ifndef _RKDETECTOR_RK_COMMON_H_
-#define _RKDETECTOR_RK_COMMON_H_
+#ifndef RKDETECTOR_RK_COMMON_H
+#define RKDETECTOR_RK_COMMON_H
 
 /**
  * @brief Image pixel format
@@ -42,4 +42,4 @@ typedef struct
     int bottom;
 } image_rect_t;
 
-#endif // _RKDETECTOR_RK_COMMON_H_
+#endif // RKDETECTOR_RK_COMMON_H
