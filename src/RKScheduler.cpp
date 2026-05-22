@@ -263,14 +263,15 @@ int RKScheduler::init(const char* model_path, rknn_core_mask core_mask)
         ctx_.is_quant = false;
     }
 
-    ctx_.io_num = io_num;
-    ctx_.input_attrs =
-        (rknn_tensor_attr*)malloc(io_num.n_input * sizeof(rknn_tensor_attr));
+    ctx_.io_num      = io_num;
+    ctx_.input_attrs = static_cast<rknn_tensor_attr*>(
+        malloc(io_num.n_input * sizeof(rknn_tensor_attr)));
     memcpy(ctx_.input_attrs,
            input_attrs,
            io_num.n_input * sizeof(rknn_tensor_attr));
-    ctx_.output_attrs =
-        (rknn_tensor_attr*)malloc(io_num.n_output * sizeof(rknn_tensor_attr));
+
+    ctx_.output_attrs = static_cast<rknn_tensor_attr*>(
+        malloc(io_num.n_output * sizeof(rknn_tensor_attr)));
     memcpy(ctx_.output_attrs,
            output_attrs,
            io_num.n_output * sizeof(rknn_tensor_attr));
@@ -337,23 +338,19 @@ void RKScheduler::release()
 
 int RKScheduler::infer(rknn_input* inputs, rknn_output* outputs)
 {
-    auto t0  = getTimeStamp();
-    int  ret = rknn_inputs_set(ctx_.rknn_ctx, ctx_.io_num.n_input, inputs);
+    int ret = rknn_inputs_set(ctx_.rknn_ctx, ctx_.io_num.n_input, inputs);
     if (ret < 0)
     {
         LOG_ERROR("rknn_inputs_set fail! ret=%d", ret);
         return -1;
     }
-    auto t1 = getTimeStamp();
 
-    ret     = rknn_run(ctx_.rknn_ctx, nullptr);
+    ret = rknn_run(ctx_.rknn_ctx, nullptr);
     if (ret < 0)
     {
         LOG_ERROR("rknn_run fail! ret=%d", ret);
         return -1;
     }
-
-    auto t2 = getTimeStamp();
 
     ret =
         rknn_outputs_get(ctx_.rknn_ctx, ctx_.io_num.n_output, outputs, nullptr);
@@ -362,14 +359,6 @@ int RKScheduler::infer(rknn_input* inputs, rknn_output* outputs)
         LOG_ERROR("rknn_outputs_get fail! ret=%d", ret);
         return -1;
     }
-
-    auto t3 = getTimeStamp();
-
-    // LOG_DEBUG("rknn_inputs_set: %.2f ms, rknn_run: %.2f ms, rknn_outputs_get: "
-    //           "%.2f ms",
-    //           (t1 - t0) / 1000.0,
-    //           (t2 - t1) / 1000.0,
-    //           (t3 - t2) / 1000.0);
 
     return 0;
 }
@@ -384,10 +373,10 @@ void RKScheduler::releaseOutputs(rknn_output* outputs, int n_output)
 // ---------------------------------------------------------------------------
 
 int RKScheduler::v8_process_i8(rknn_output*        outputs,
-                                std::vector<float>& boxes,
-                                std::vector<float>& objProbs,
-                                std::vector<int>&   classId,
-                                float               threshold)
+                               std::vector<float>& boxes,
+                               std::vector<float>& objProbs,
+                               std::vector<int>&   classId,
+                               float               threshold)
 {
     int validCount        = 0;
     int output_per_branch = ctx_.io_num.n_output / 3;
@@ -487,10 +476,10 @@ int RKScheduler::v8_process_i8(rknn_output*        outputs,
 }
 
 int RKScheduler::v8_process_fp32(rknn_output*        outputs,
-                                  std::vector<float>& boxes,
-                                  std::vector<float>& objProbs,
-                                  std::vector<int>&   classId,
-                                  float               threshold)
+                                 std::vector<float>& boxes,
+                                 std::vector<float>& objProbs,
+                                 std::vector<int>&   classId,
+                                 float               threshold)
 {
     int validCount        = 0;
     int output_per_branch = ctx_.io_num.n_output / 3;
@@ -578,10 +567,10 @@ int RKScheduler::v8_process_fp32(rknn_output*        outputs,
 // ---------------------------------------------------------------------------
 
 int RKScheduler::post_process(rknn_output*               outputs,
-                               const letterbox_t*         letter_box,
-                               float                      conf_threshold,
-                               float                      nms_threshold,
-                               object_detect_result_list* od_results)
+                              const letterbox_t*         letter_box,
+                              float                      conf_threshold,
+                              float                      nms_threshold,
+                              object_detect_result_list* od_results)
 {
     std::vector<float> filterBoxes;
     std::vector<float> objProbs;

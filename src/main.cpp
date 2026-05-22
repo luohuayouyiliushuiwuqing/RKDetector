@@ -122,7 +122,7 @@ int main(int argc, char** argv)
     LabelTools       label_tools("./model/drone.txt");
     NPULoadMonitor   monitor;
     std::thread      monitor_thread([&monitor] {
-        monitor.start(50000);
+        monitor.start(50);
     });
 
     int              ret = pool.init(model_path, cores, &monitor);

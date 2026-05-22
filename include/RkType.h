@@ -4,6 +4,7 @@
 #include "common.h"
 #include "rknn_api.h"
 
+#include <thread>
 #include <sys/time.h>
 
 #define OBJ_NUMB_MAX_SIZE 128
