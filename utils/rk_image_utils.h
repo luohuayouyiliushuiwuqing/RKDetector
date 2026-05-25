@@ -2,6 +2,7 @@
 #define RKDETECTOR_RK_IMAGE_UTILS_H
 
 #include "rk_common.h"
+#include <cstdint>
 
 /**
  * @brief LetterBox

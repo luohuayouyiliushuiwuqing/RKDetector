@@ -28,6 +28,8 @@ static void              camera_thread_func(const char*       dev_path,
     }
     LOG_INFO("camera[%d]: opened %s", cam_id, dev_path);
 
+    int frame_id = 0;
+
     while (g_running)
     {
         V4L2Frame nv12;
@@ -44,11 +46,12 @@ static void              camera_thread_func(const char*       dev_path,
 
         task_queue->push([pool,
                           cam_id,
+                          frame_id,
                           nv12_copy,
                           nv12_size,
                           w = nv12.width,
                           h = nv12.height] {
-            int      dev      = pool->acquire();
+            int      dev      = pool->acquire(cam_id, frame_id);
             auto     t1       = getTimeStamp();
 
             // RGA hardware: NV12 → RGB888
@@ -72,10 +75,33 @@ static void              camera_thread_func(const char*       dev_path,
             int ret = pool->detector(dev).detect(&img, &results, 0.45, 0.45);
 
             pool->release_detector(dev);
-            LOG_INFO("cam[%d] detect cost %.1f ms (core %d)",
-                     cam_id,
-                     (getTimeStamp() - t1) * 1e-3,
-                     dev);
+            LOG_DEBUG("cam[%d] frame[%d] detect cost %.1f ms (core %d)",
+                      cam_id,
+                      frame_id,
+                      (getTimeStamp() - t1) * 1e-3,
+                      dev);
+
+            LOG_DEBUG("========================");
+
+            auto all = pool->get_all_core_tasks();
+            for (auto& core : all)
+            {
+                LOG_DEBUG("core=%d: busy=%d tasks_size=%zu",
+                          core.core_id,
+                          core.busy,
+                          core.tasks.size());
+                for (auto& t : core.tasks)
+                {
+                    LOG_DEBUG("    core=%d,task=%lu: cam=%d frame=%d time=%lu ",
+                              core.core_id,
+                              t.task_id,
+                              t.cam_id,
+                              t.frame_id,
+                              t.start_time);
+                }
+            }
+
+            LOG_DEBUG("****************************");
 
             free(rgb_buf);
             free(nv12_copy);
@@ -85,6 +111,8 @@ static void              camera_thread_func(const char*       dev_path,
                 LOG_ERROR("cam[%d] detect fail! ret=%d", cam_id, ret);
             }
         });
+
+        frame_id++;
     }
     LOG_INFO("camera[%d]: thread exit", cam_id);
 }
@@ -135,8 +163,8 @@ int main(int argc, char** argv)
 
     // Fixed worker thread pool — 6 workers for 3 NPU cores
     // (2 per core to hide RGA + memcpy latency)
-    TaskQueue                task_queue(512);
-    const int                num_workers = 6;
+    TaskQueue                task_queue(32);
+    const int                num_workers = 3;
     std::vector<std::thread> workers;
     workers.reserve(num_workers);
     for (int i = 0; i < num_workers; i++)

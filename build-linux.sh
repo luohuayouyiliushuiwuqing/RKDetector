@@ -26,11 +26,8 @@ while getopts ":b:d:m:r" opt; do
   esac
 done
 
-GCC_COMPILER=aarch64-linux-gnu
-
-echo "$GCC_COMPILER"
-export CC=${GCC_COMPILER}-gcc
-export CXX=${GCC_COMPILER}-g++
+export CC=aarch64-linux-gnu-gcc
+export CXX=aarch64-linux-gnu-g++
 
 if command -v ${CC} >/dev/null 2>&1; then
     :
