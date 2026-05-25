@@ -24,7 +24,7 @@ private:
     bool               read_load();
 
     std::ifstream      m_file;
-    std::atomic<bool>  m_running{};
+    std::atomic<bool>  m_running{false};
     std::mutex         m_mtx;
 
     std::map<int, int> m_load_map;

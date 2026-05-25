@@ -14,13 +14,16 @@ NPULoadMonitor::NPULoadMonitor(std::string path, int npu_core_len)
     {
         LOG_DEBUG("Failed to open %s. Try sudo or check debugfs.",
                   path.c_str());
-        m_running = false;
+        m_running.store(false);
     }
-    m_running = true;
+    else
+    {
+        m_running.store(true);
+    }
 }
 void NPULoadMonitor::start(int interval_ms)
 {
-    while (m_running)
+    while (m_running.load() == true)
     {
         {
             std::lock_guard<std::mutex> lock(m_mtx);
@@ -34,7 +37,7 @@ void NPULoadMonitor::start(int interval_ms)
 
 void NPULoadMonitor::stop()
 {
-    m_running = false;
+    m_running.store(false);
 }
 
 int NPULoadMonitor::get_core_load(int core)
