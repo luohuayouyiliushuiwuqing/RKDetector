@@ -66,7 +66,7 @@ static inline const char* log_level_color(enum log_level_t level)
     case LOG_LVL_INFO:
         return "\033[1;32m"; /* bold green */
     case LOG_LVL_DEBUG:
-        return "\033[1;37m"; /* bold cyan */
+        return "\033[1;37m"; /* bold white */
     default:
         return "\033[0m";
     }
