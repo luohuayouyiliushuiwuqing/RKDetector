@@ -15,10 +15,12 @@ using namespace rkdet;
 
 static std::atomic<bool> g_running{true};
 
-static void              camera_thread_func(const char*       dev_path,
-                                            int               cam_id,
-                                            NPUDevicePool<3>* pool,
-                                            TaskQueue*        task_queue)
+using NPUPool = NPUDevicePool<3>;
+
+static void camera_thread_func(const char* dev_path,
+                               int         cam_id,
+                               NPUPool*    pool,
+                               TaskQueue*  task_queue)
 {
     V4L2Camera cap;
     if (!cap.open(dev_path))
@@ -146,9 +148,9 @@ int main(int argc, char** argv)
         RKNN_NPU_CORE_1,
         RKNN_NPU_CORE_2,
     };
-    NPUDevicePool<3> pool;
-    NPULoadMonitor   monitor;
-    std::thread      monitor_thread([&monitor] {
+    NPUPool        pool;
+    NPULoadMonitor monitor;
+    std::thread    monitor_thread([&monitor] {
         monitor.start(50);
     });
 
@@ -177,8 +179,8 @@ int main(int argc, char** argv)
         camera_thread_func, "/dev/mipi_camera_0_main", 0, &pool, &task_queue);
     std::thread cam1(
         camera_thread_func, "/dev/mipi_camera_1_main", 1, &pool, &task_queue);
-    std::thread cam2(
-        camera_thread_func, "/dev/mipi_camera_2_main", 2, &pool, &task_queue);
+    // std::thread cam2(
+    //     camera_thread_func, "/dev/mipi_camera_2_main", 2, &pool, &task_queue);
     // std::thread cam3(
     //     camera_thread_func, "/dev/mipi_camera_0_save", 3, &pool, &task_queue);
     // std::thread cam4(
@@ -188,7 +190,7 @@ int main(int argc, char** argv)
 
     cam0.join();
     cam1.join();
-    cam2.join();
+    // cam2.join();
     // cam3.join();
     // cam4.join();
     // cam5.join();
