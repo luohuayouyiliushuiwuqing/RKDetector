@@ -13,9 +13,8 @@ namespace rkdet
 class NPULoadMonitor
 {
 public:
-    explicit NPULoadMonitor(
-        const std::string& path = "/sys/kernel/debug/rknpu/load");
-
+    NPULoadMonitor(std::string path         = "/sys/kernel/debug/rknpu/load",
+                   int         npu_core_len = 3);
     void start(int interval_ms = 10000);
     void stop();
 
@@ -26,9 +25,11 @@ private:
 
     std::ifstream      m_file;
     std::atomic<bool>  m_running{};
-    std::mutex         mtx_;
+    std::mutex         m_mtx;
 
     std::map<int, int> m_load_map;
+
+    int                npu_core_len = 3;
 };
 
 } // namespace rkdet

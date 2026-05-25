@@ -6,7 +6,8 @@
 
 using namespace rkdet;
 
-NPULoadMonitor::NPULoadMonitor(const std::string& path)
+NPULoadMonitor::NPULoadMonitor(std::string path, int npu_core_len)
+: npu_core_len(npu_core_len)
 {
     m_file.open(path);
     if (!m_file.is_open())
@@ -17,14 +18,13 @@ NPULoadMonitor::NPULoadMonitor(const std::string& path)
     }
     m_running = true;
 }
-
 void NPULoadMonitor::start(int interval_ms)
 {
     while (m_running)
     {
         if (read_load())
         {
-            std::lock_guard<std::mutex> lock(mtx_);
+            std::lock_guard<std::mutex> lock(m_mtx);
         }
         std::this_thread::sleep_for(
             std::chrono::microseconds(interval_ms * 1000));
@@ -43,7 +43,7 @@ int NPULoadMonitor::get_core_load(int core)
     {
         return 0;
     }
-    std::lock_guard<std::mutex> lock(mtx_);
+    std::lock_guard<std::mutex> lock(m_mtx);
 
     return m_load_map[core];
 }
@@ -64,38 +64,31 @@ bool NPULoadMonitor::read_load()
     }
 
     // Extract all numbers from the line
-    int  vals[3] = {0, 0, 0};
-    int  count   = 0;
-    bool in_num  = false;
-    int  num     = 0;
-
-    for (size_t i = 0; i <= line.size() && count < 3; i++)
+    size_t pos = 0;
+    while ((pos = line.find("Core", pos)) != std::string::npos)
     {
-        char c = (i < line.size()) ? line[i] : ' ';
-        if (c >= '0' && c <= '9')
+        if (line[pos + 4] >= '0' && line[pos + 4] <= '9')
         {
-            in_num = true;
-            num    = num * 10 + (c - '0');
-        }
-        else
-        {
-            if (in_num)
+            int core_id = line[pos + 4] - '0';
+            if (core_id >= 0 && core_id < npu_core_len)
             {
-                vals[count++] = num;
-                num           = 0;
-                in_num        = false;
+                size_t percent_pos = line.find("%", pos);
+                if (percent_pos != std::string::npos)
+                {
+                    // Extract the number before '%'
+                    size_t num_start = line.rfind(" ", percent_pos);
+                    if (num_start != std::string::npos &&
+                        num_start < percent_pos)
+                    {
+                        std::string num_str = line.substr(
+                            num_start + 1, percent_pos - num_start - 1);
+                        int load_value      = std::stoi(num_str);
+                        m_load_map[core_id] = load_value;
+                    }
+                }
             }
         }
-    }
-
-    if (count == 0)
-    {
-        return false;
-    }
-
-    for (int i = 0; i < count && i < 3; i++)
-    {
-        m_load_map[i] = vals[i];
+        pos += 9; // 跳过已找到的 "Core" 避免死循环
     }
     return true;
 }
