@@ -22,9 +22,9 @@ void NPULoadMonitor::start(int interval_ms)
 {
     while (m_running)
     {
-        if (read_load())
         {
             std::lock_guard<std::mutex> lock(m_mtx);
+            read_load();
         }
         std::this_thread::sleep_for(
             std::chrono::microseconds(interval_ms * 1000));
