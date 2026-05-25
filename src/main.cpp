@@ -10,6 +10,7 @@
 #include <mutex>
 #include <vector>
 #include <cstring>
+#include <cstdlib>
 
 using namespace rkdet;
 
@@ -46,22 +47,27 @@ static void camera_thread_func(const char* dev_path,
         uint8_t* nv12_copy = (uint8_t*)malloc(nv12_size);
         memcpy(nv12_copy, nv12.data, nv12_size);
 
+        std::shared_ptr<uint8_t> nv12_copy_ptr(
+            nv12_copy, free); // auto-free on task completion
+
         task_queue->push([pool,
                           cam_id,
                           frame_id,
-                          nv12_copy,
-                          nv12_size,
+                          nv12_copy_ptr,
                           w = nv12.width,
                           h = nv12.height] {
-            int      dev      = pool->acquire(cam_id, frame_id);
-            auto     t1       = getTimeStamp();
+            int                      dev      = pool->acquire(cam_id, frame_id);
+            auto                     t1       = getTimeStamp();
 
             // RGA hardware: NV12 → RGB888
-            uint32_t rgb_size = w * h * 3;
-            uint8_t* rgb_buf  = (uint8_t*)malloc(rgb_size);
-            cvtColor(nv12_copy,
+            uint32_t                 rgb_size = w * h * 3;
+            std::shared_ptr<uint8_t> rgb_buf_ptr(
+                (uint8_t*)malloc(rgb_size),
+                free); // auto-free on task completion
+
+            cvtColor(nv12_copy_ptr.get(),
                      IMAGE_FORMAT_YUV420SP_NV12,
-                     rgb_buf,
+                     rgb_buf_ptr.get(),
                      IMAGE_FORMAT_RGB888,
                      w,
                      h);
@@ -70,7 +76,7 @@ static void camera_thread_func(const char* dev_path,
             img.width     = w;
             img.height    = h;
             img.format    = IMAGE_FORMAT_RGB888;
-            img.virt_addr = rgb_buf;
+            img.virt_addr = rgb_buf_ptr.get();
             img.size      = rgb_size;
 
             object_detect_result_list results;
@@ -104,9 +110,6 @@ static void camera_thread_func(const char* dev_path,
             }
 
             LOG_DEBUG("****************************");
-
-            free(rgb_buf);
-            free(nv12_copy);
 
             if (ret != 0)
             {
