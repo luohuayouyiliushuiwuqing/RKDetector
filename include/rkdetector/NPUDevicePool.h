@@ -65,7 +65,7 @@ public:
              NPULoadMonitor*       monitor = nullptr)
     {
         std::lock_guard<std::mutex> lock(m_mtx);
-        m_monitor_ptr = std::shared_ptr<NPULoadMonitor>(monitor);
+        m_monitor_ptr = monitor;
         for (int i = 0; i < N; i++)
         {
             LOG_INFO("init detector[%d] on core %s",
@@ -277,7 +277,7 @@ private:
     std::array<bool, N>                  m_busy_array = {};
     int                                  m_last_used  = -1;
 
-    std::shared_ptr<NPULoadMonitor>      m_monitor_ptr;
+    NPULoadMonitor*                      m_monitor_ptr = nullptr;
 
     std::array<std::vector<TaskInfo>, N> m_core_tasks; // per-core task list
     uint64_t                             m_task_id_counter{0};
