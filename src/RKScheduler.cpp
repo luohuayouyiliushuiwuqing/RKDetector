@@ -647,13 +647,13 @@ int RKScheduler::post_process(rknn_output*               outputs,
         int   id       = classId[n];
         float obj_conf = objProbs[i];
 
-        od_results->results[last_count].box.left =
+        od_results->results[last_count].left =
             (int)(clamp(x1, 0, model_in_w) / letter_box->scale);
-        od_results->results[last_count].box.top =
+        od_results->results[last_count].top =
             (int)(clamp(y1, 0, model_in_h) / letter_box->scale);
-        od_results->results[last_count].box.right =
+        od_results->results[last_count].right =
             (int)(clamp(x2, 0, model_in_w) / letter_box->scale);
-        od_results->results[last_count].box.bottom =
+        od_results->results[last_count].bottom =
             (int)(clamp(y2, 0, model_in_h) / letter_box->scale);
         od_results->results[last_count].prop   = obj_conf;
         od_results->results[last_count].cls_id = id;

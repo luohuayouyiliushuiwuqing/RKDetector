@@ -9,18 +9,22 @@
 
 #define OBJ_NUMB_MAX_SIZE 128
 
-namespace rkdet {
+namespace rkdet
+{
 
 typedef struct
 {
-    image_rect_t box;
-    float        prop;
-    int          cls_id;
+    float prop;
+    int   cls_id;
+
+    int   left;
+    int   right;
+    int   top;
+    int   bottom;
 } object_detect_result;
 
 typedef struct
 {
-    int                  id;
     int                  count;
     object_detect_result results[OBJ_NUMB_MAX_SIZE];
 } object_detect_result_list;

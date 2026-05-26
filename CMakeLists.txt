@@ -17,6 +17,7 @@ set(SRCS
         src/LabelTools.cpp
         src/NPULoadMonitor.cpp
         src/V4L2Camera.cpp
+        src/RKTypeConversion.cpp
 )
 
 set(UTILS_LIBS
