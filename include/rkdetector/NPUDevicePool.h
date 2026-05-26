@@ -1,6 +1,7 @@
 #ifndef _RKDETECTOR_NPU_DEVICE_POOL_H_
 #define _RKDETECTOR_NPU_DEVICE_POOL_H_
 
+#include "RKTypeConversion.h"
 #include "rkdetector/RKDetector.h"
 #include "rkdetector/NPULoadMonitor.h"
 #include "rkdetector/log.h"
@@ -12,32 +13,6 @@
 
 namespace rkdet
 {
-
-inline std::string cov_rk2_string(rknn_core_mask core_mask)
-{
-    switch (core_mask)
-    {
-    case RKNN_NPU_CORE_AUTO:
-        return "Core AUTO";
-    case RKNN_NPU_CORE_0:
-        return "Core 0";
-    case RKNN_NPU_CORE_1:
-        return "Core 1";
-    case RKNN_NPU_CORE_2:
-        return "Core 2";
-    case RKNN_NPU_CORE_0_1:
-        return "Core 0_1";
-    case RKNN_NPU_CORE_0_1_2:
-        return "Core 0_1_2";
-    case RKNN_NPU_CORE_ALL:
-        return "Core ALL";
-    case RKNN_NPU_CORE_UNDEFINED:
-        return "UNCore DEFINED";
-    default:
-        return "UNKNOWN";
-    }
-}
-
 struct TaskInfo
 {
     uint64_t task_id;
@@ -70,7 +45,7 @@ public:
         {
             LOG_INFO("init detector[%d] on core %s",
                      i,
-                     cov_rk2_string(cores[i]).c_str());
+                     RKTypeConversion::RKMaskToString(cores[i]).c_str());
             int ret =
                 m_detectors_array[i].init(model_path, label_path, cores[i]);
             if (ret != 0)
@@ -285,11 +260,6 @@ private:
     mutable std::mutex                   m_mtx;
     std::condition_variable              m_cv;
 };
-
-using NPUPool_1 = NPUDevicePool<1>;
-using NPUPool_2 = NPUDevicePool<2>;
-using NPUPool_3 = NPUDevicePool<3>;
-
 } // namespace rkdet
 
 #endif /* _RKDETECTOR_NPU_DEVICE_POOL_H_ */
